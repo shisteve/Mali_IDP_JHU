@@ -14,17 +14,29 @@ what a panel regression can and cannot establish.
 The analysis proceeds in two parts:
 
 1. **Model selection** (Stages A–E): a structured funnel that narrows 282
-   candidate features to a 14-variable final model, growing the specification
-   from 1 feature to the final model one step at a time.
+   candidate features to the 11 retained in the final model (M5), growing the
+   specification from 1 feature to the final model one step at a time.
 2. **Validation and extensions** (Parts II–IV): Random Forest stress-tests
    the linear model, heterogeneity tests reveal what the average effects hide,
    and the independent refugee-outflow outcome cross-validates the findings.
 
-**Data.** IDP source: DTM survey panel, N<5 zero-run-filtered and re-stitched
-(`delta_idp_zrt5.csv`). Sample: n = 1,417 observations, 44 cercles, after
+**Data.** IDP source: DTM survey panel, zero-run-filtered and re-stitched<!-- (`delta_idp_zrt5.csv`). -->Sample: n = 1,417 observations, 44 cercles, after
 requiring complete data for all M5 features. Conflict: ACLED strict (direct
 lethal violence). Climate: ERA5 reanalysis. Food: WFP price monitoring.
-Spatial weights: road-distance decay matrix (`weighting_beta1.csv`).
+Spatial weights: road-distance decay matrix<!--  (`weighting_beta1.csv`)-->.
+
+**Survey structure — irregular rounds and zero-change intervals.** DTM runs 81
+irregular survey rounds (2014–2024) with non-uniform gaps, and many cercles miss
+rounds; in the raw panel **~65% of adjacent-round changes are exactly zero**
+(repeated figures, not fresh surveys). We apply a **months-based zero-run
+filter**: a run of consecutive zero-change rounds is kept when the non-zero
+changes bracketing it are **≤5 months apart**, but a longer run is dropped and
+the series re-stitched into a single survivor-to-survivor interval
+(<!-- `delta_idp_zrt5.csv`; -->3,078 → 1,622 intervals, zeros 65% → 33%, gaps now
+1–96 months<!-- ; reproduced by `scripts/run_zero_run_filter.py` -->). The outcome is
+then expressed **per month** (÷`months_between`) so the re-stitched intervals
+stay comparable, and intervals longer than 6 months are excluded — leaving
+**n = 1,417** across 44 cercles.
 
 **Notation.**
 
@@ -68,11 +80,6 @@ regardless of survey gap length (intervals range from 1 to 6 months).
 - **Food**: `inflation_food_price_index` (a growth rate, signed) → identity.
   `c_food_price_index` and `c_maize` (price levels, non-negative) → **log1p**.
 
-Cumulative features (total fatalities over K months) were considered in early
-exploratory work but not used — they overlap with adjacent banded windows and
-the banded design already captures sustained exposure via multiple
-non-overlapping bands.
-
 **Lag structure — banded windows.** Rather than point lags (the value at exactly
 N months ago), we use **non-overlapping banded window averages**. A band
 `[lo, hi]m` takes the mean of the monthly variable over the window from
@@ -99,6 +106,26 @@ climate). The **current window** (0 months lag, i.e. the observation period
 `(t1, t2]` itself) is used only for climate and food — conflict in the current
 window is excluded because it risks reverse causality (displacement events may
 *cause* conflict rather than vice versa).
+
+**Matching monthly predictors to the irregular intervals.** Conflict, climate,
+and food are monthly series, while the IDP intervals are irregular and — after
+re-stitching — of varying length. They are aligned by calendar month, by **anchoring
+every lag to the interval start `t1`**:
+- A **lagged band** `[lo, hi]m` is the mean of the monthly series over the
+  calendar months `month(t1)−hi … month(t1)−lo`, strictly before `t1`. Because it
+  depends on `t1` alone (not on `t2` or the gap length), *every* interval — short
+  or long, re-stitched or not — receives the same well-defined pre-interval
+  history. Irregular gaps therefore do not distort the lagged predictors.
+- The **current window** (lag 0, climate and food only) is the mean over the
+  interval itself, `(t1, t2]`, so it automatically spans the actual gap — averaging
+  one month for a 1-month interval and, say, six for a re-stitched 6-month one.
+  Pairing this with the per-month outcome keeps long and short intervals comparable.
+- **Conflict has no current window** (excluded above), so it enters only through
+  pre-`t1` bands and is wholly unaffected by interval length.
+
+So a re-stitched long interval changes only its *own*-window average (and the
+outcome, which is per-month normalised); the conflict and lagged-climate history
+that does most of the explanatory work is anchored to `t1` and unchanged.
 
 **Cumulative windows.** Cumulative features (e.g. total fatalities over the past
 12 months) were considered in early exploratory work but **not used in the final
@@ -404,9 +431,9 @@ specification.**
 
 
 ### The final model: M5
-
-$$y_{it} = \underbrace{\beta_1 f(\text{fat}_{7\text{-}9}) + \beta_2 f(W\!\cdot\!\text{fat}_{10\text{-}12})}_{\text{conflict (mixed lag)}} + \underbrace{\theta_1 f(\text{spi6}_{13\text{-}18}) + \theta_2 f(\text{flood\_dur}_{13\text{-}18}) + \theta_3 f(W\!\cdot\!\text{spi6}) + \theta_4 f(W\!\cdot\!\text{flood\_dur})}_{\text{SPI flood channel}} + \underbrace{\theta_5 f(\text{p\_anom}) + \theta_6 f(\text{stream}) + \theta_7 f(W\!\cdot\!\text{p\_anom}) + \theta_8 f(W\!\cdot\!\text{stream})}_{\text{acute water channel}} + \phi\, f(\text{food}_{19\text{-}24}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
-
+```math
+y_{it} = \underbrace{\beta_1 f(\text{fat}_{7\text{-}9}) + \beta_2 f(W\!\cdot\!\text{fat}_{10\text{-}12})}_{\text{conflict (mixed lag)}} + \underbrace{\theta_1 f(\text{spi6}_{13\text{-}18}) + \theta_2 f(\text{flood\_dur}_{13\text{-}18}) + \theta_3 f(W\!\cdot\!\text{spi6}) + \theta_4 f(W\!\cdot\!\text{flood\_dur})}_{\text{SPI flood channel}} + \\ \underbrace{\theta_5 f(\text{p\_anom}) + \theta_6 f(\text{stream}) + \theta_7 f(W\!\cdot\!\text{p\_anom}) + \theta_8 f(W\!\cdot\!\text{stream})}_{\text{acute water channel}} + \phi\, f(\text{food}_{19\text{-}24}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}
+```
 **R²_within = 0.0992**, n = 1,417, 44 cercles, SE clustered on entity:
 
 | Driver | Coef | SE | p | |
@@ -484,13 +511,17 @@ displacement wave; a prolonged flood gradually drains the catchment population
 so that later displacement is smaller. The net effect on any given observation
 depends on both the level and duration of the past wet anomaly.
 
-![Figure 5b — SPI partial-dependence plots](figures/fig5b_spi_pdp.png)
-
-**Figure 5b.** Random-Forest partial-dependence plots for the two SPI terms
-(within-transformed). A wet anomaly 13–18m earlier raises displacement (level
-effect, left); prolonged flooding at the same lag lowers it (wave absorption,
-right) — the two facets M5 separates, recovered by a model that assumes no
-functional form.
+**The flood channel is about sharpness, not size.** `spi6` and `flood_dur` are
+positively correlated (within-corr +0.46), so their individual coefficients are
+entangled partial effects. Rotating the pair into orthogonal axes (PCA; the fit
+is identical and every other coefficient is unchanged) makes the mechanism
+unambiguous: a **flood-magnitude** axis — intensity and duration rising together
+— is *non-significant* (+0.008), while a **flood-sharpness** axis — intensity net
+of duration — carries the entire effect (+0.111\*\*\*). It is not how large a
+flood is, but how *acute* it is: a short, intense flood displaces; a prolonged
+one of the same size does not. This is the wave-absorption mechanism expressed in
+a single, collinearity-free coefficient (VIF 1.2–1.3, vs 1.5–1.7 for the
+entangled pair).
 
 The **spillover `W·spi6_13_18m`** (−0.311**) is negative and larger in
 absolute magnitude than the local term. This means a flood anomaly in
@@ -646,6 +677,22 @@ non-linear structure; near 0 means the feature is essentially linear:
 | `fatalities_7_9m` | 0.370 | moderate |
 | `W·fatalities_10_12m` | 0.358 | moderate |
 | `spi6_13_18m` | 0.033 | essentially linear |
+
+![Figure 5b — SPI partial-dependence plots](figures/fig5b_spi_pdp.png)
+
+**Figure 5b.** Random-Forest partial-dependence plots for the two SPI terms
+(within-transformed): `spi6_13_18m` rises roughly linearly (left; nl=0.03), while
+`spi6_flood_dur` steps down (right; nl=0.46) — the level and wave-absorption
+facets that linear M5 estimates separately, here recovered by a model that
+assumes no functional form.
+
+**The flood-duration "step" is not a true threshold.** `spi6_flood_dur` is zero
+for ~two-thirds of observations (no flood), which gives its PDP the stepped
+appearance. Tested in TWFE, a threshold dummy `I(flood_dur > pN)` adds nothing
+beyond the continuous term (non-significant when included alongside it) and fits
+*worse* when it replaces it (R² falls) — so M5 keeps the continuous
+wave-absorption term. Like M9–M10, an RF shape need not survive a fixed-effects
+test.
 
 **Top interaction H-statistics** (Friedman H — how much the joint partial
 dependence of two features exceeds the sum of their individual effects):
@@ -860,7 +907,7 @@ named-disaster test (M15, M16) — and end with the combined model (M17).
 
 The general formula for each interaction test is:
 
-$$y_{it} = \underbrace{[\text{M5 terms}]}_{\text{14 variables}} + \underbrace{\gamma\, f(x_{it}) \cdot z_i}_{\text{interaction: driver × moderator}} + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+$$y_{it} = \underbrace{[\text{M5 terms}]}_{\text{11 variables}} + \underbrace{\gamma\, f(x_{it}) \cdot z_i}_{\text{interaction: driver × moderator}} + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
 
 where $x_{it}$ is a time-varying M5 driver and $z_i$ is a time-invariant
 cercle-level moderator (standardised to mean 0, SD 1). Because $z_i$ is
@@ -941,6 +988,13 @@ The conflict-arrival channel is dampened too, and more strongly than food
 channels — though the *mechanism* differs: for food it is cross-border
 substitution (Part IV), while for conflict arrivals the most natural reading is
 capacity absorption, which the refugee data does not test.
+
+**Caveat.** This conflict interaction is the one finding that does **not** survive
+the dynamic-panel (Nickell) bias correction (it collapses to ns) — unsurprisingly,
+since it is built on `idp_baseline`, which is derived from the lagged displacement
+level. It should be treated as suggestive only; the food result (M11c) does not
+share this fragility and is corroborated by the refugee mirror. See *Robustness —
+dynamic-panel bias*.
 
 ---
 
@@ -1180,6 +1234,17 @@ upper-tail signal overlaps with the other terms once all are in the model. The
 three heterogeneity interactions (M11c, M11_W, M13) remain strongly significant.
 R²_within rises from **0.099 to 0.112** (+0.013).
 
+![Figure 6 — M17 stacked-model forest](figures/fig6_m17_forest.png)
+
+**Figure 6.** M17 (stacked model) coefficients as **standardized effects**
+(change in monthly log-IDP growth per 1-SD within-cercle shock), with 95% CIs;
+faded = not significant. Above the line are the M5 main effects; below are the
+four heterogeneity extensions (M11c, M11_W, M15, M7d threshold). The acute-water
+main effects (`p_anom`, `streamflow`) lose *individual* significance here because
+their signal is partly absorbed by the `p_anom × log(pop)` interaction and the
+streamflow threshold. **†** `W·fat × idp_base` does not survive the dynamic-panel
+correction (see *Robustness*).
+
 A notable side effect: the `W·fatalities` main effect **strengthens from
 +0.252 to +0.373** in M17. M5's coefficient was an average across the
 IDP-history distribution; M17 separates the absorption component (the
@@ -1232,7 +1297,7 @@ does not merely weaken — it **inverts**.
 | n | 1,111 | 306 |
 | R²_within | 0.104 | **0.365** |
 | local conflict (fat 7–9m) | +0.051 ns | **+0.044 \*\*\*** |
-| conflict spillover (W·fat 10–12m) | +0.264 \*\* | **−0.110 \*\* (sign flip)** |
+| conflict spillover (W·fat 10–12m) | +0.264 \*\* | **−0.110 \*\* (collapses; ns after bias correction)** |
 | SPI flood (spi6 13–18m) | +0.150 \*\*\* | +0.044 ns |
 | flood duration | −0.065 \*\*\* | −0.020 ns |
 | current rainfall (p_anom) | −0.0026 \*\* | +0.0002 ns |
@@ -1243,17 +1308,20 @@ Three things change at once. First, **the model fits far better post-coup**
 (R²_within 0.10 → 0.37): displacement became much more predictable, because a
 single factor came to dominate. Second, **that factor is local conflict** —
 `fatalities_7_9m`, non-significant before, becomes the strongest driver after.
-Third, and most striking, **the conflict spillover reverses sign** (+0.26 →
-−0.11): violence in neighbouring cercles no longer pulls people in as IDP
-arrivals.
+Third, and most striking, **the conflict spillover collapses** — the robustly
+positive pre-2020 effect (+0.26) vanishes, turning to −0.11 in FE (and to a
+non-significant −0.06 under the dynamic-panel correction; see *Robustness*).
+Violence in neighbouring cercles no longer pulls people in as IDP arrivals.
 
 The coherent explanation is that **post-coup road blockages broke the spatial
 flight mechanism**. Before 2020, people fled conflict by moving toward safer
 neighbouring cercles, registering as arrivals there — the positive spillover.
 After 2020, with roads cut and movement restricted, violence displaces people
-*in place* and cross-cercle flight collapses, so the spillover inverts. Every
-climate and food channel — which operate on slower, livelihood-mediated
-timescales — is swamped by the violence and goes null.
+*in place* and cross-cercle flight shuts off — which is exactly why the spillover
+channel **vanishes** (a switched-off reception channel implies a *null* spillover;
+the FE estimate even turns negative, but the bias-corrected estimate is
+indistinguishable from zero). Every climate and food channel — which operate on
+slower, livelihood-mediated timescales — is swamped by the violence and goes null.
 
 **Is 2020 really the break?** Re-splitting at every half-year from 2018 to 2021
 confirms the break is genuinely around the coup, not an artefact of the chosen
@@ -1268,10 +1336,11 @@ cut:
 
 Two signatures pin the break to 2020. First, the post-period R² jumps sharply —
 about 0.15 for pre-2020 cuts, but 0.31–0.42 once the cut reaches 2020. Second,
-the spillover sign flip is only *significant* from 2020 onward: cutting at 2018
-or 2019 gives a weak, non-significant negative spillover (those post-windows are
-still mostly pre-coup), but as the cut moves into the post-coup period the
-negative spillover strengthens monotonically (−0.09\*\* → −0.14\*\*\*). The
+the collapse of the positive spillover is only *significant* from 2020 onward:
+cutting at 2018 or 2019 gives a weak, non-significant negative spillover (those
+post-windows are still mostly pre-coup), but as the cut moves into the post-coup
+period the negative spillover strengthens monotonically (−0.09\*\* → −0.14\*\*\*,
+in FE). The
 structural break is a 2020 phenomenon.
 
 **All magnitudes in this report describe 2014–2020 Mali.** The post-2020 regime
@@ -1294,6 +1363,19 @@ spatial-spillover terms — which capture redistribution *between* Malian cercle
 do not apply: cross-border flight is driven by the cercle's *own* conditions
 pushing people over the international border, not by neighbour-weighted
 conditions inside Mali. The refugee model therefore uses local drivers only.
+
+**The refugee data is sparse and geographically concentrated.** Unlike internal
+displacement, which is spread across the country, cross-border outflow is
+overwhelmingly a **northern** phenomenon: ~80% originates in the three northern
+regions (Tombouctou 41%, Taoudénit 23%, Gao 15%), and just **three cercles
+account for ~half** of all outflow (the top six ≈ 74%). It traces to the
+post-2012 occupation of the north, with refugees fleeing chiefly to **Mauritania,
+Niger, and Burkina Faso**, and the series runs longer than the IDP panel
+(2012–2025). The refugee model is therefore identified off a smaller, northern
+base than the broad-coverage IDP model — which makes the cross-outcome agreement
+below (especially the mirror substitution) a check across genuinely *different*
+geographies, but also means the refugee findings lean on a handful of northern
+cercles and should be read as corroboration rather than independent proof.
 
 **The refugee outcome is well explained by the same drivers (R²_within = 0.119),
 but with a different driver mix.** Comparing each driver on both outcomes under
@@ -1340,6 +1422,51 @@ refugee counterpart — they are genuinely IDP-specific.
 
 ---
 
+## Robustness — dynamic-panel (Nickell) bias
+
+M5 conditions on the lagged displacement level (`log1p_idp_t1`) to absorb mean
+reversion. In a two-way fixed-effects panel, including a lagged dependent level
+induces **Nickell bias**, which can distort the driver coefficients. We test this
+with an instrumental-variables correction.
+
+**The instrument.** The natural Anderson–Hsiao instrument is the previous
+survey's level, but it is *invalid here*: because the outcome is a **change** over
+consecutive intervals that share an endpoint, the residuals carry negative serial
+correlation (AR(1) ≈ −0.23). We therefore use the **lag-2 level** as the
+instrument (the Arellano–Bond remedy under MA(1) errors); its first stage is
+strong.
+
+| Quantity | FE | IV (lag-2) | verdict |
+|---|---|---|---|
+| M5 conflict spillover | +0.251\*\*\* | +0.208\*\*\* | robust (−17%) |
+| food × idp_base (M11c) | −0.0050\*\*\* | −0.0030\*\* | robust |
+| p_anom × log(pop) (M15) | −0.0016\*\* | −0.0018\*\*\* | robust |
+| I(stream > p75) | +0.085 ns | +0.080 ns | stable |
+| **W·fat × idp_base (M11_W)** | **−0.145\*\*\*** | **−0.020 ns** | **not robust** |
+| spillover, pre-2020 | +0.264\*\* | +0.241\*\*\* | robust |
+| spillover, post-2020 | −0.110\*\* | −0.062 ns | sign holds, sig. weakens |
+
+Three conclusions:
+
+1. **The headline results are robust.** The conflict spillover (M5), the
+   food-substitution interaction (M11c), and the population buffer (M15) all
+   survive the correction with the same signs and significance; the bias shaves
+   only ~17% off the conflict spillover.
+2. **The structural break holds in direction.** The spillover is positive
+   pre-2020 (+0.241\*\*\*) and negative post-2020 (−0.062); the reversal survives
+   the correction, though the post-coup estimate loses significance in the
+   smaller IV sample (n≈300).
+3. **One exception — the conflict wave-absorption interaction (`W·fat × idp_base`,
+   M11_W) is not robust:** it collapses to non-significance. This is expected — it
+   is built on `idp_baseline`, which is mechanically derived from the lagged
+   level, making it the term most entangled with the dynamic-panel bias. The
+   *food* substitution result (M11c) does not share this fragility and is
+   independently corroborated by the refugee mirror (Part IV).
+
+<!-- (Reproducible via `scripts/run_dynamic_panel.py`.) -->
+
+---
+
 ## Conclusion — what we found
 
 **What drives displacement:**
@@ -1373,12 +1500,18 @@ refugee counterpart — they are genuinely IDP-specific.
 - An independent refugee dataset — different agency, different outcome —
   reproduced the climate and food patterns, which strengthens confidence that
   these are real signals.
+- The main results also survive a **dynamic-panel robustness check** (correcting
+  for how the model carries past displacement forward): the conflict, climate,
+  and food-redirection findings all hold. The one exception is a *secondary*
+  pattern — the dampening of conflict spillover in already-displaced areas —
+  which does not survive and should be treated with caution.
 - These patterns describe **Mali up to 2020**. After the August 2020 coup the
-  whole pattern *inverts*: local violence becomes the dominant driver, the
-  cross-community spillover **reverses** (blocked roads appear to trap people in
-  place rather than let them flee to neighbours), and the climate and food
-  signals fade. The model explains the past well; the post-coup period is a
-  different system.
+  whole pattern shifts: local violence becomes the dominant driver, and the
+  cross-community spillover **collapses** — blocked roads appear to cut off flight
+  to neighbours, so the channel that pulled people into safer cercles switches off
+  (the effect drops from strongly positive to indistinguishable from zero), while
+  the climate and food signals fade. The model explains the past well; the
+  post-coup period is a different system.
 
 **The findings in detail:**
 
@@ -1396,17 +1529,22 @@ refugee counterpart — they are genuinely IDP-specific.
 
 **Identification.** TWFE with banded lags and spatial spillovers provides
 *conditional associations* suggestive of causal effects, not clean causal
-estimates. No instrument or natural experiment is available. The causal
+estimates. No instrument or natural experiment is available **for the drivers
+themselves** (the dynamic-panel correction above instruments only the lagged
+outcome, not conflict, climate, or food). The causal
 interpretation rests on design choices: the conflict lags (local 7–9m, spillover
 10–12m) make reverse causality implausible; `W·fatalities` is hard to argue is
 caused by local IDP arrivals; two-way FE removes the dominant confounders.
 Remaining time-varying cercle-specific confounders are not controlled for.
 
-**R² and causal importance.** R²_within is used for model selection because no
-better operational criterion exists for this observational panel. It measures
-predictive fit in the within-cercle space, not causal effect size. The
-conflict > climate > food ranking is a statement about relative predictive
-importance, not a direct measure of causal contribution.
+**R² and causal importance.** R²_within is the primary fit criterion for model
+selection, applied alongside the p-value and coefficient-sign criteria. It is
+imperfect — an *in-sample* measure, and non-monotonic under the two-way FE
+transform — but it is the natural, interpretable metric in the within-cercle
+space, and the selections were cross-checked against out-of-sample R² (RF
+cross-validation). Crucially, R²_within measures explanatory fit, not causal
+effect size: the conflict > climate > food ranking reflects relative
+*explanatory* importance, not a direct measure of causal contribution.
 
 **Incomplete non-linearity scan.** The Random Forest non-linearity screen
 (Part II) was computed on the M5 feature set, so non-linear structure in
@@ -1426,9 +1564,9 @@ appears in Stage A and is examined in M6) but is not in the final model; see
 *A second drought channel* in Part II.
 
 **Post-2020 regime change.** All magnitudes in this report describe 2014–2020
-Mali. After the August 2020 coup the displacement regime *inverts* — local
-conflict becomes dominant and the spillover reverses sign (see *Temporal
-stability — the 2020 structural break*). The spatial weight matrix assumes
+Mali. After the August 2020 coup the displacement regime shifts — local
+conflict becomes dominant and the positive cross-cercle spillover collapses (see
+*Temporal stability — the 2020 structural break*). The spatial weight matrix assumes
 static road connectivity, which post-coup road blockages violate; forecasting
 the current period would require a road-state-aware W and re-estimation on a
 recent subsample.
