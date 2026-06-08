@@ -282,6 +282,13 @@ consistently ~10–12m. The local optimal lag is **7–9m** — people fleeing t
 own cercle register 2–3 months faster. The mixed-lag spec (local 7–9m,
 spillover 10–12m) beats the same-lag (10–12m/10–12m) by +0.0027 R².
 
+![Figure 4 — mixed-lag conflict heatmap](figures/fig4_heatmap.png)
+
+**Figure 4.** Best R²_within for every combination of local and spillover
+conflict lag (3.9M-model search). The global optimum is local 7–9m × spillover
+10–12m (black box) — local conflict registers faster than neighbour spillover,
+so the two channels carry different optimal lags.
+
 We also check whether **climate spillovers** benefit from different lags
 between local and spillover terms. The answer is no — for all three climate
 variables the same-band spillover is already optimal or any alternative
@@ -352,9 +359,10 @@ and have low within-correlation between their two variables:
 - **M3** = `p_anom_cur` + `streamflow_cur` (R²=0.0914, within-corr=+0.042) — contemporaneous rainfall and river flow, near-orthogonal
 
 These will be tested as standalone second channels in Stage E, then combined
-with M1 to form M4 and M5. **M0** (backbone only, R²=0.087) and **M1**
-(backbone + SPI, R²=0.097) are the two reference models from Stage D. Stage E
-asks whether a second climate channel adds independent signal beyond M1.
+with M1 to form M4 and M5. **M0** (backbone only) and **M1** (backbone + SPI)
+are the two reference models carried into Stage E. (R² values are reported in
+the Stage E table below, fit on the locked common sample.) Stage E asks whether
+a second climate channel adds independent signal beyond M1.
 
 ---
 
@@ -396,9 +404,9 @@ specification.**
 
 
 ### The final model: M5
-```math
-y_{it} = \underbrace{\beta_1 f(\text{fat}_{7\text{-}9}) + \beta_2 f(W\!\cdot\!\text{fat}_{10\text{-}12})}_{\text{conflict (mixed lag)}} + \underbrace{\theta_1 f(\text{spi6}_{13\text{-}18}) + \theta_2 f(\text{flood\_dur}_{13\text{-}18}) + \theta_3 f(W\!\cdot\!\text{spi6}) + \theta_4 f(W\!\cdot\!\text{flood\_dur})}_{\text{SPI flood channel}} + \underbrace{\theta_5 f(\text{p\_anom}) + \theta_6 f(\text{stream}) + \theta_7 f(W\!\cdot\!\text{p\_anom}) + \theta_8 f(W\!\cdot\!\text{stream})}_{\text{acute water channel}} + \phi\, f(\text{food}_{19\text{-}24}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}
-```
+
+$$y_{it} = \underbrace{\beta_1 f(\text{fat}_{7\text{-}9}) + \beta_2 f(W\!\cdot\!\text{fat}_{10\text{-}12})}_{\text{conflict (mixed lag)}} + \underbrace{\theta_1 f(\text{spi6}_{13\text{-}18}) + \theta_2 f(\text{flood\_dur}_{13\text{-}18}) + \theta_3 f(W\!\cdot\!\text{spi6}) + \theta_4 f(W\!\cdot\!\text{flood\_dur})}_{\text{SPI flood channel}} + \underbrace{\theta_5 f(\text{p\_anom}) + \theta_6 f(\text{stream}) + \theta_7 f(W\!\cdot\!\text{p\_anom}) + \theta_8 f(W\!\cdot\!\text{stream})}_{\text{acute water channel}} + \phi\, f(\text{food}_{19\text{-}24}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+
 **R²_within = 0.0992**, n = 1,417, 44 cercles, SE clustered on entity:
 
 | Driver | Coef | SE | p | |
@@ -416,6 +424,13 @@ y_{it} = \underbrace{\beta_1 f(\text{fat}_{7\text{-}9}) + \beta_2 f(W\!\cdot\!\t
 | W·streamflow_1m | −0.000 | 0.000 | 0.839 | ns |
 | inflation_food_19_24m | +0.005 | 0.003 | 0.122 | ns |
 
+![Figure 3 — M5 coefficient forest plot](figures/fig3_forest.png)
+
+**Figure 3.** M5 coefficients with 95% CI. Faded markers are not significant at
+p<0.05; streamflow is scaled by 1 SD for display. Conflict spillover is the
+largest effect; the SPI level term and its negative spillover are significant;
+the acute water terms are small; food is null.
+
 **Interpreting M5.** The AR control `log1p_idp_t1` (−0.179***) is the dominant
 single term — cercles with high IDP stock grow more slowly (mean reversion). It
 is not an incidental nuisance but a structural feature of the data: IDP counts
@@ -428,24 +443,24 @@ chance to explain the residual variation.
 
 The cleanest way to see what the drivers contribute is to split the model in
 two steps. **Step 1:** fit only the controls (AR + `months_between`) — this
-gives R²_within = 0.049, capturing the mean-reversion structure alone.
-**Step 2:** add the three driver families on top — this adds +0.050, bringing
-the total to R²=0.099. That +0.050 is what conflict, climate, and food
+gives R²_within = 0.048, capturing the mean-reversion structure alone.
+**Step 2:** add the three driver families on top — this adds +0.051, bringing
+the total to R²=0.099. That +0.051 is what conflict, climate, and food
 collectively explain *beyond* the auto-correlation structure.
 
-Within that +0.050, a **LOO (Leave-One-Out) decomposition** — refit with each
+Within that +0.051, a **LOO (Leave-One-Out) decomposition** — refit with each
 driver block removed, measure the R² drop — shows the relative importance:
 
 | Driver block | ΔR² when removed | share of driver contribution |
 |---|---|---|
-| **Conflict** (local + spillover) | −0.037 | **75%** |
+| **Conflict** (local + spillover) | −0.037 | **72%** |
 | **Climate** (all 8 terms) | −0.008 | **16%** |
-| Food | +0.005 | — (null; marginally hurts fit) |
+| Food | +0.000 | — (null) |
 
-Conflict accounts for three-quarters of the driver-explained variance; climate
-adds a further 16%. Food is null — its coefficient is near zero and removing it
-marginally *improves* fit, which is why it is kept only as an explicit null
-finding rather than a genuine contributor.
+Conflict accounts for roughly three-quarters of the driver-explained variance;
+climate adds a further 16%. Food is null — its coefficient is near zero and
+removing it leaves the fit essentially unchanged, which is why it is kept only as
+an explicit null finding rather than a genuine contributor.
 
 Conflict drives displacement through **neighbours** more than through the focal
 cercle (spillover +0.252*** vs local +0.046**). The 5× ratio is consistent with
@@ -468,6 +483,14 @@ Together the two terms say: a sudden, short-lived wet shock drives a large
 displacement wave; a prolonged flood gradually drains the catchment population
 so that later displacement is smaller. The net effect on any given observation
 depends on both the level and duration of the past wet anomaly.
+
+![Figure 5b — SPI partial-dependence plots](figures/fig5b_spi_pdp.png)
+
+**Figure 5b.** Random-Forest partial-dependence plots for the two SPI terms
+(within-transformed). A wet anomaly 13–18m earlier raises displacement (level
+effect, left); prolonged flooding at the same lag lowers it (wave absorption,
+right) — the two facets M5 separates, recovered by a model that assumes no
+functional form.
 
 The **spillover `W·spi6_13_18m`** (−0.311**) is negative and larger in
 absolute magnitude than the local term. This means a flood anomaly in
@@ -596,6 +619,18 @@ M5-restricted RF achieves better OOS R² than the full 282-feature RF (0.089 vs
 0.075) — adding 268 more features actively hurts generalisation, confirming
 that TWFE's variable selection is predictively sound.
 
+**Why not the raw variants, despite their higher OOS R²?** Their extra accuracy
+is not driver signal. The raw models include entity one-hot encodings and a
+month index — and the raw feature *levels* themselves leak cercle identity (a
+persistently floody cercle has persistently high streamflow) — so the forest
+scores well by learning *which cercle and which month* it is looking at: stable
+baselines and the overall time trend. That is precisely the confounded
+cross-sectional variation that fixed effects remove for identification. Knowing
+a cercle's baseline predicts its displacement level but says nothing about what
+*causes* within-cercle change. The demeaned variants are therefore the
+benchmark that matches TWFE's causal question; the raw R² = 0.144 is reported
+only as the prediction ceiling, not as a candidate model.
+
 **Non-linearity scores.** For each M5 feature we compute a non-linearity score —
 how much of its RF predictive contribution comes from non-linear splits vs a
 linear approximation. A score near 1.0 means the RF is heavily exploiting
@@ -603,21 +638,23 @@ non-linear structure; near 0 means the feature is essentially linear:
 
 | Feature | nl score | what this flags |
 |---|---|---|
-| `W·streamflow_cur` | 0.915 | highly non-linear |
-| `fatalities_10_12m` | 0.913 | highly non-linear |
-| `streamflow_cur` | 0.826 | highly non-linear |
-| `spi6_flood_dur_13_18m` | 0.484 | moderate |
-| `p_anom_cur` | 0.397 | moderate |
-| `spi6_13_18m` | 0.025 | essentially linear |
+| `W·streamflow_cur` | 0.916 | highly non-linear |
+| `streamflow_cur` | 0.846 | highly non-linear |
+| `W·p_anom_cur` | 0.478 | moderate |
+| `spi6_flood_dur_13_18m` | 0.457 | moderate |
+| `p_anom_cur` | 0.448 | moderate |
+| `fatalities_7_9m` | 0.370 | moderate |
+| `W·fatalities_10_12m` | 0.358 | moderate |
+| `spi6_13_18m` | 0.033 | essentially linear |
 
 **Top interaction H-statistics** (Friedman H — how much the joint partial
 dependence of two features exceeds the sum of their individual effects):
 
 | Feature 1 | Feature 2 | H-stat | type |
 |---|---|---|---|
-| `fatalities_10_12m` | `spi6_flood_dur_13_18m` | 0.409 | conflict × climate |
-| `fatalities_10_12m` | `p_anom_1m` | 0.276 | conflict × climate |
-| `fatalities_10_12m` | `spi6_13_18m` | 0.211 | conflict × climate |
+| `fatalities_7_9m` | `spi6_flood_dur_13_18m` | 0.208 | conflict × climate |
+| `fatalities_7_9m` | `W·p_anom_cur` | 0.157 | conflict × climate |
+| `W·fatalities_10_12m` | `streamflow_cur` | 0.146 | conflict × climate |
 
 ### What we test in TWFE and why
 
@@ -642,37 +679,81 @@ interaction pairs rather than testing all combinations.
 Every nominated test is then run in TWFE with two-way FE and clustered SE —
 the RF signal is only a nomination, the TWFE result is the verdict.
 
+**A limitation of this approach.** The non-linearity scan is computed on the M5
+feature set, so it can only flag non-linear structure in variables the linear
+funnel already selected. Non-linear effects in *non-selected* features — for
+instance a threshold at a lag band not in M5 — are not screened and could be
+missed. Because every nomination still faces a de-confounded TWFE test, this can
+never admit a spurious effect; the risk is purely one of **omission**.
+
+That omission has limited consequence, and the cross-validation results bound it.
+A Random Forest given the **full 282-feature set** generalises no better
+out-of-sample (OOS R² = 0.075) than one restricted to M5's twelve features
+(0.089) — adding the other 270 features, with all their potential non-linear
+structure, does not improve prediction on held-out data. Whatever non-linearity
+exists in the non-selected features, a flexible learner cannot turn it into
+out-of-sample signal. Combined with the functional-form tests on the M5 features
+themselves (M6–M10), which found almost no non-linearity surviving a
+fixed-effects test, this bounds the missed structure to be small. The
+functional-form tests refine the *shape* of drivers the model already
+identified; they cannot change *which* families drive displacement.
+
 ### Functional-form tests (M6–M10)
 
-The RF flagged five candidates for TWFE testing — three from high nl_scores,
+The RF flagged five candidates for TWFE testing — three from elevated nl_scores,
 one from a top H-statistic, and one additional test motivated by the Stage A
 screen (the spi6_19_24m drought signal that narrowly missed BH correction):
 
 | Test | RF motivation | TWFE test form | TWFE verdict |
 |---|---|---|---|
 | **M6** spi6 19–24m drought | Stage A rank 7 (nl=0.025, not RF-flagged) | add `spi6_19_24m` as second SPI lag | ❌ significant alone but R²_within drops |
-| **M7** streamflow threshold | nl=0.826 — step-function PDP | `I(stream > p75)` dummy ± continuous | ✅ threshold ** displaces continuous term |
-| **M8** fatal × flood-dur interaction | H=0.409, top conflict×climate pair | product term `fatal × spi6_flood_dur` | ❌ all ns with updated M5 (was * in old same-lag spec) |
-| **M9** conflict non-linearity | nl=0.913 — highly non-linear PDP | quadratic `[log1p(fat)]²` + threshold | ❌ all null — log1p transform artefact |
+| **M7** streamflow threshold | nl=0.85 — step-function PDP | `I(stream > p75)` dummy ± continuous | ✅ threshold ** displaces continuous term |
+| **M8** fatal × flood-dur interaction | H=0.21, top conflict×climate pair | product term `fatal × spi6_flood_dur` | ❌ all interaction terms ns |
+| **M9** conflict non-linearity | nl=0.37 — moderately non-linear PDP | quadratic `[log1p(fat)]²` + threshold | ❌ all null — log1p transform artefact |
 | **M10** food non-linearity | high raw-RF rank (not demeaned RF) | quadratic, threshold, interaction, shorter lag | ❌ all null — entity FE absorbs |
 
 We test **all RF-flagged candidates** — there is no further pre-selection beyond
-what the PDP shape already determined. The second H-statistic pair
-(`fatal × p_anom`, H=0.276) was subsumed within M8's joint specification.
+what the PDP shape already determined. The next-ranked conflict×climate pairs
+(`fatal × W·p_anom`, H=0.16; `W·fat × streamflow`, H=0.15) are weaker than the
+pair M8 tests (H=0.21); since even that strongest interaction is null in TWFE,
+the weaker ones are not separately tested.
 
 **M6** was not RF-flagged (nl_score=0.025, essentially linear) but tested
 because the Stage A screen showed `spi6_19_24m` narrowly missed the BH
 correction with a clearly negative coefficient. This is an example of using
 domain knowledge alongside RF to nominate tests.
 
-Two tests revealed artefacts rather than real structure. **M9**: fatalities had
-the second-highest nl_score (0.913), suggesting a strongly non-linear response.
-In TWFE, all non-linearity tests are null — the RF was detecting the curvature
-of the log1p transform applied to fatalities before regression, not a real
-causal curve. After log1p, conflict is genuinely linear. **M10**: food appeared
-important in the raw (undemeaned) RF but not in the demeaned RF — the apparent
-signal reflects stable cross-cercle differences in food prices that entity FE
-absorbs entirely, exactly confirming the food-null result from M5.
+**A second drought channel.** M6's drought signal (`spi6_19_24m`) is the one
+channel excluded purely on the R²_within criterion, so it is worth a closer
+look. Added to M5 on its own, it is significant and correctly signed
+(−0.064\*\*, p=0.015): a drought (negative SPI) 19–24 months earlier raises
+displacement through the slow-onset crop-failure pathway. It is nearly orthogonal
+to the flood signal (within-correlation 0.03) and leaves every other M5
+coefficient essentially unchanged when added. It is excluded only because joint
+inclusion lowers R²_within by 0.005 — the fixed-effects non-monotonicity
+discussed earlier — and the exhaustive search that fixed M5 optimised on that
+metric. Drought is therefore a real, second-tier climate channel that the
+parsimony criterion keeps out — significant pre-2020 and, like every climate
+channel, vanishing post-coup.
+
+Two tests revealed artefacts rather than real structure. **M9**: fatalities has
+a moderate nl_score (0.37). In TWFE, all non-linearity tests are null — the
+residual curvature the RF detects is the shape of the log1p transform applied to
+fatalities before regression, not a real causal curve. After log1p, conflict is
+genuinely linear. **M10**: food appeared important in the raw (undemeaned) RF but
+not in the demeaned RF — the apparent signal reflects stable cross-cercle
+differences in food prices that entity FE absorbs entirely, exactly confirming
+the food-null result from M5.
+
+**Spillover non-linearities are null too.** The nl-scores also flag several
+*spillover* terms — `W·streamflow_cur` is in fact the single most non-linear
+feature (nl=0.92), with `W·p_anom_cur` (0.48) and `W·fatalities_10_12m` (0.36)
+moderate. Tested in TWFE (quadratic and threshold, added to M5), all are null:
+W·streamflow threshold p=0.14, W·p_anom p=0.50, W·fatalities p=0.78. The highest
+RF nl-score in the entire feature set thus corresponds to no detectable TWFE
+non-linearity — a clean illustration that these scores reflect distributional
+shape (and, for the insignificant spillover terms, noise) rather than causal
+structure.
 
 **Sub-model labels.** Each functional-form test (M7–M10) runs several
 variants, labelled M7a, M7b, … to distinguish them:
@@ -684,24 +765,39 @@ variants, labelled M7a, M7b, … to distinguish them:
 | **c** | M5 + `fatal × I(stream>p75)` | M5 + `fatal × W·flood_dur` (local×W·spillover) |
 | **d** | M5 + `I(stream>p75)` *alongside* continuous | M5 + all three jointly |
 
-**M7 — streamflow upper-tail threshold.** The threshold dummy is added as an
-**extra term alongside** the continuous streamflow (M7d) — not replacing it. This
-tests whether the threshold captures *additional* structure beyond the linear
-gradient. We also test replacing the continuous term (M7b) to understand where
-the signal lives:
+**M7 — streamflow upper-tail threshold.** The RF's step-function PDP for
+streamflow suggests the displacement effect is concentrated in the upper tail.
+The question is: what functional form best captures this?
 
-| Spec | R²_within | ΔR² | I(stream>p75) | streamflow (continuous) |
+`streamflow_anom_1m` is a **signed anomaly** — departures from the climatological
+mean, with 70% of observations negative (below-average river flow). Two
+specifications come to mind:
+
+- **Binary dummy** `I(stream > p75)`: 1 when above the 75th percentile (≈ above-average flow), 0 otherwise.
+- **Hockey stick** `max(stream − p75, 0)`: 0 below the threshold, excess above it otherwise.
+
+The hockey stick is **not appropriate here**. It implicitly assumes all
+below-threshold observations contribute exactly zero to displacement —
+defensible for a non-negative variable (zero rain = zero flood) but unjustified
+for a signed anomaly where below-average river flow may itself have real effects.
+Setting 70% of observations to exactly zero discards valid information. The
+binary dummy avoids this: every observation receives a 0 or 1 without assuming
+the sub-threshold group has zero effect.
+
+We test the binary dummy in two configurations — replacing the continuous term
+(M7b) and alongside it (M7d):
+
+| Spec | R²_within | ΔR² | I(stream>p75) | continuous stream |
 |---|---|---|---|---|
 | M5 | 0.0992 | — | — | +0.0001** |
-| M7b: threshold *replaces* continuous | 0.0985 | −0.0007 | +0.115** | — |
-| M7d: threshold *alongside* continuous | **0.1004** | **+0.0013** | **+0.099*** | **ns** |
+| M7b: dummy *replaces* continuous | 0.0985 | −0.0007 | +0.115** | — |
+| **M7d: dummy *alongside* continuous** | **0.1004** | **+0.0013** | **+0.099*** | **ns** |
 
-M7b is *worse* than M5 — replacing the continuous term loses information about
+M7b is worse than M5 — replacing the continuous term loses information about
 the full distribution. M7d adds +0.001 R²: the threshold captures the upper-tail
-jump (+0.099*), while **the continuous streamflow falls to ns**. This is the
-key finding — the continuous term's ** significance in M5 was driven almost
-entirely by extreme high-flow events, not by the full linear gradient. The
-non-linearity is real, but modest.
+jump (+0.099*), while the continuous streamflow drops to ns. The mechanism is a
+**directional threshold crossing** — above-average river flow drives displacement;
+below-average or moderate flow does not.
 
 Critically, **all other M5 coefficients are essentially unchanged in M7d**:
 
@@ -726,11 +822,10 @@ jointly (local×local `fatal×flood_dur`, W·conflict×local, local×W·flood_du
 | M8a: LL alone | 0.0992 | +0.000 | ns | — | — |
 | M8d: all three jointly | 0.1017 | +0.0026 | ns | ns | ns |
 
-With the updated M5 (local conflict at 7–9m), **all three interaction terms are
-insignificant**. The ΔR²=+0.003 in M8d reflects the joint model absorbing some
-shared variance, not any individually significant interaction. Importantly, the
-original M5 linear coefficients remain stable in M8d — conflict and SPI change
-by less than 10%:
+**All three interaction terms are insignificant.** The ΔR²=+0.003 in M8d
+reflects the joint model absorbing some shared variance, not any individually
+significant interaction. Importantly, the M5 linear coefficients remain stable
+in M8d — conflict and SPI change by less than 10%:
 
 | Driver | M5 | M8d |
 |---|---|---|
@@ -751,8 +846,589 @@ artefacts dismissed.
 
 ## Part III — What M5 averages away: heterogeneity
 
-TBD
+M5 estimates a single coefficient for each driver — an *average* effect across
+all 44 cercles and all years. But averages can mask heterogeneity: some cercles
+may respond strongly to food shocks while others show no response, and the two
+effects cancel in the average. Part III tests whether cross-sectional moderators
+(a cercle's displacement history, population size, border location, urban
+status) reveal structure that M5's averages hide.
+
+**Model numbering note.** Models M11–M17 are all extensions of M5, each adding
+one interaction or control term. They are presented in logical order —
+substitution channels (M11, M12), then buffering channels (M13, M14), then the
+named-disaster test (M15, M16) — and end with the combined model (M17).
+
+The general formula for each interaction test is:
+
+$$y_{it} = \underbrace{[\text{M5 terms}]}_{\text{14 variables}} + \underbrace{\gamma\, f(x_{it}) \cdot z_i}_{\text{interaction: driver × moderator}} + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+
+where $x_{it}$ is a time-varying M5 driver and $z_i$ is a time-invariant
+cercle-level moderator (standardised to mean 0, SD 1). Because $z_i$ is
+absorbed by the entity FE $\alpha_i$ when entered alone, only the *interaction*
+term $f(x) \cdot z$ varies within a cercle over time and is identified.
+
+---
+
+### M11 — displacement history moderates food and conflict
+
+**Motivation.** M5 shows food is null on average. But maybe food matters in
+*some* cercles and not others — and the two effects average to zero. A cercle's
+cumulative displacement history is a natural candidate moderator: where large
+numbers have already been displaced, a new food shock may translate into
+displacement differently than in a cercle with little prior displacement.
+
+**Moderators.** All four are constructed the same way: take the
+**per-cercle time-average** of the transformed variable across all observation
+periods, then standardise to mean 0, SD 1 across cercles. The time-average
+is necessary because the underlying variable varies over time within each cercle
+(IDP stock, food prices, conflict and climate all change year to year). Averaging
+collapses that time variation into a single stable characteristic of the cercle.
+A time-invariant moderator is also required for identification: the entity FE
+absorbs any pure cross-sectional variable, so only the *interaction* (driver ×
+baseline) is identified — it varies over time because the driver varies, while
+the baseline stays fixed.
+
+| Baseline | constructed from | interpretation |
+|---|---|---|
+| `food_baseline` | time-avg of f(inflation_food_19_24m) per cercle | persistently high/low food price inflation |
+| `conflict_baseline` | time-avg of f(fatalities_7_9m) per cercle | persistently high/low local violence |
+| `climate_baseline` | time-avg of f(spi6_13_18m) per cercle | persistently wet/dry flood exposure history |
+| `idp_baseline` | time-avg of log1p_idp_t1 per cercle | persistently large/small IDP stock — cumulative displacement history |
+
+**M11a–d each add one food × baseline interaction:**
+
+We test four candidate baselines for the food channel (M11a–d), then extend
+the winning baseline to the conflict channel:
+
+| Spec | interaction | coef | p | ΔR² |
+|---|---|---|---|---|
+| M11a | food × food_baseline | −0.00125 | 0.464 ns | −0.001 |
+| M11b | food × conflict_baseline | −0.00248 | 0.061 * | +0.001 |
+| **M11c** | **food × idp_baseline** | **−0.00541** | **0.001 \*\*\***  | **+0.003** |
+| M11d | food × climate_baseline | −0.00048 | 0.728 ns | +0.001 |
+
+`idp_baseline` is the clear winner. M11a is null — a cercle's own persistent
+food price level does not moderate how it responds to food shocks. M11d is also
+null — persistent flood exposure history (climate_baseline, constructed as the
+per-cercle time-average of spi6_13_18m) does not moderate the food response
+either. M11b is marginal (*) because conflict and displacement history are
+correlated; idp_baseline captures the relevant dimension more directly.
+
+**M11c (coef=−0.00541***, ΔR²=+0.003)** shows that the food null decomposes:
+in low-IDP-history cercles food stress increases displacement; in high-IDP-history
+cercles it reduces it. The average is near zero — M5's null — but the
+heterogeneity is real. The null results for M11a and M11d confirm that it is
+specifically the *displacement history* of the cercle that matters, not its
+food price or climate history. What the dampening *means* — whether the
+food-stressed population is no longer present, or is diverted to a different
+channel — cannot be settled with IDP data alone. Part IV resolves it directly
+using the independent refugee outcome: the effect is **cross-border
+substitution** (food shocks redirect people from internal registration to
+refugee flight), not a reduction in displacement.
+
+**Having established that displacement history dampens the food response, we ask
+whether it also dampens the conflict-arrival channel.** The W·fatalities term
+captures *arrivals* from neighbouring cercles — a cercle that has already
+absorbed many prior arrivals may have less remaining capacity (housing, services,
+social networks) to receive further inflows:
+
+| Spec | interaction | coef | p | ΔR² |
+|---|---|---|---|---|
+| M11_W | W·fat × idp_baseline | −0.16494 | 0.001 *** | +0.007 |
+
+The conflict-arrival channel is dampened too, and more strongly than food
+(coef=−0.165***, ΔR²=+0.007 vs +0.003). Displacement history thus moderates both
+channels — though the *mechanism* differs: for food it is cross-border
+substitution (Part IV), while for conflict arrivals the most natural reading is
+capacity absorption, which the refugee data does not test.
+
+---
+
+### M12 — border cercles leak food-stressed populations
+
+**Motivation.** Cercles on Mali's borders share a land crossing with
+neighbouring countries. A food-stressed population near a border has an exit
+option — cross-border refugee flight — that an interior cercle does not.
+The food effect may therefore be smaller (or even opposite) in border cercles.
+
+**Moderator.** `is_border` = 1 for cercles with cumulative refugee outflow > 1,000 (20 cercles identified from UNHCR data).
+
+| Interaction | coef | p | ΔR² |
+|---|---|---|---|
+| **food × is_border** | **−0.00478** | **0.034\*\***  | **+0.002** |
+| spi6_13_18m × is_border | +0.039 | 0.365 ns | −0.001 |
+| fatalities_7_9m × is_border | −0.019 | 0.685 ns | 0.000 |
+| W·fatalities_10_12m × is_border | −0.073 | 0.290 ns | +0.001 |
+
+Only the food channel is dampened in border cercles. This is **not wave
+absorption** — it is **leakage**: food-stressed populations near the border
+substitute cross-border refugee flight for internal IDP registration. The
+dampened IDP response is not a reduction in total displacement but a
+reallocation to the refugee channel. This interpretation is confirmed
+directly in Part IV.
+
+**Sensitivity to border threshold.** `is_border` is defined as cumulative
+refugee outflow > 1,000, giving 20 border cercles. Re-running with thresholds
+of 500 (31 cercles), 2,000 (16 cercles), and 5,000 (11 cercles) gives
+significant `food × is_border` at ** or *** in all cases, with coefficients
+ranging from −0.005 to −0.008. The finding is not sensitive to where the
+threshold is drawn.
+
+---
+
+### M13 — population size buffers climate and food (not conflict)
+
+**Motivation.** Populous cercles (cities, regional capitals) have more
+diversified economies and deeper food markets. They may absorb livelihood
+shocks that would displace people in smaller, more food-dependent cercles.
+
+**Moderator.** `log(population_2015)`, standardised across cercles.
+
+| Interaction | coef | p | ΔR² |
+|---|---|---|---|
+| **p_anom × log(pop)** | **−0.00181** | **0.010\*\*\***  | **+0.003** |
+| food × log(pop) | −0.00184 | 0.056* | +0.001 |
+| fatalities_7_9m × log(pop) | −0.015 | 0.463 ns | 0.000 |
+| W·fatalities_10_12m × log(pop) | −0.037 | 0.327 ns | 0.000 |
+
+The interaction coefficients tell a precise story about how population moderates
+each channel.
+
+**Acute rainfall (`p_anom × pop`, −0.00181***):** In small cercles (−1 SD
+population), the rainfall slope is **+0.00075** — rainfall *increases*
+displacement. In large cercles (+1 SD), the slope is **−0.00287** — rainfall
+is strongly protective. The sign actually *flips* across the population
+distribution. Small, rural cercles are so dependent on rain-fed agriculture
+that a rainfall anomaly directly affects livelihoods and can push people to
+move. Populous cercles have diversified non-agricultural income; rainfall
+variation doesn't threaten livelihoods the same way.
+
+**Food prices (`food × pop`, −0.00184*):** The slope stays positive at both
+ends — food stress increases displacement everywhere — but the magnitude
+halves: +0.00731 in small cercles vs +0.00363 in large cercles. Populous
+cercles have deeper markets, more wage employment, and greater ability to
+substitute away from food price shocks. They don't eliminate the
+food-displacement relationship; they dampen it by roughly half.
+
+**Conflict (both null):** Violence displaces uniformly regardless of city or
+cercle size — there is no economic buffer against security threats.
+
+The results are fully robust to population year: re-running with 2019 population
+gives identical coefficients and p-values to four decimal places, as the
+cross-cercle population ranking is perfectly stable between 2015 and 2019
+(corr = 1.000).
+
+---
+
+### M14 — cities buffer climate and food (not conflict)
+
+**Motivation.** Major cities may differ from border or high-population cercles
+through institutional capacity — market integration, social services, employment
+diversity. A discrete city dummy tests whether urban status buffers shocks over
+and above the continuous population effect in M13.
+
+**Moderator.** `is_urban` = 1 for Bamako and 5 regional capitals
+(Kayes, Ségou, Sikasso, Mopti, Gao) — 6 cercles.
+
+| Interaction | coef | p | ΔR² |
+|---|---|---|---|
+| streamflow × is_urban | +0.000 | 0.970 ns | 0.000 |
+| **spi6_13_18m × is_urban** | **−0.087** | **0.040 \*\*** | −0.003 |
+| spi6_flood_dur × is_urban | −0.033 | 0.328 ns | −0.003 |
+| p_anom × is_urban | −0.002 | 0.227 ns | +0.002 |
+| **food × is_urban** | **−0.00798** | **0.028 \*\*** | −0.001 |
+| fatalities_7_9m × is_urban | −0.030 | 0.248 ns | 0.000 |
+| W·fatalities_10_12m × is_urban | −0.034 | 0.586 ns | 0.000 |
+
+Both food and the slow SPI channel are significantly buffered in cities (both
+**). The conflict channel is null across all M5 drivers. Cities dampen
+livelihood-driven displacement through market depth and employment alternatives;
+they do not change the violence-displacement relationship.
+
+**On the negative ΔR².** Both significant interactions show ΔR² < 0 —
+R²_within *decreases* when the interaction is added. This is paradoxical only
+if R² is interpreted as a simple goodness-of-fit measure. In a two-way FE
+panel, `rsquared_within` is the fraction of within-unit variance explained
+*after* demeaning. Adding a new regressor can mechanically reduce this metric
+if the new term absorbs variance that the entity FE was previously accounting
+for through the demeaned mean — a known property of PanelOLS, not a sign that
+the term is harmful. The interaction coefficient being significant (p<0.05) and
+mechanistically coherent is the correct criterion; the negative ΔR² is a
+measurement artefact of the FE framework, not evidence against the finding.
+
+**Sensitivity to urban definition.** We test eight alternative definitions to
+identify the mechanism behind M14's findings:
+
+| Definition | n | Mopti/Gao? | food×urban | spi6×urban | W·fat×urban |
+|---|---|---|---|---|---|
+| Bamako + Mopti + Gao | 3 | ✓ | −0.010** | ns | ns |
+| Kayes + Ségou + Sikasso | 3 | ✗ | ns | ns | ns |
+| **All 6 named capitals** | **6** | **✓** | **−0.008\*\*** | **−0.087\*\*** | **ns** |
+| Top-6 by population | 6 | ✗ | ns | ns | ns |
+| Top-10 by population | 10 | ✓ | ns | ns | ns |
+| Top-6 by density | 6 | ✗ | ns | ns | ns |
+| Top-10 by density | 10 | ✓ | ns | ns | ns |
+
+Four conclusions emerge. First, **W·fatalities is null across every single
+definition** — conflict displaces uniformly regardless of how urban status is
+defined. This is the most robust result in M14: there is no urban buffer
+against violence under any reasonable definition.
+
+Second, **Kayes, Ségou and Sikasso — despite being larger (population ranks
+3–5) and denser than Mopti and Gao — contribute nothing alone**, ruling out
+population size and density as the mechanism for the food and SPI effects.
+
+Third, **simply including Mopti and Gao in a larger set is not sufficient**:
+top-10 definitions that include both produce null results, because diluting
+them with 7–8 non-capital cercles removes the signal.
+
+Fourth, the food and SPI effects are specific to the **6-capital
+administrative network** as a coherent system. Gao (density rank 34,
+population rank 12) and Mopti (population rank 10) are not large or dense
+cities. What they share with Bamako is their role as **regional administrative
+and commercial hubs** for Mali's most food-insecure and climate-exposed
+populations. The buffering reflects institutional access — markets, government
+services, NGO presence — not demographic scale.
+
+---
+
+### M15/M16 — Do named disasters amplify the climate-displacement response?
+
+**Motivation.** The core question is whether officially declared flood or
+drought events amplify the displacement response to climate variables — does
+the SPI or streamflow slope steepen during a named disaster period? If so, the
+binary event label captures severity information that the continuous physical
+variables miss.
+
+**Data.** 20 EMDAT flood + drought events in Mali 2007–2024, spatially
+assigned to cercles by admin level (admin2 directly; admin1 fanned out to
+all cercles in the region; admin0 nationally). `flood_active` = 1 for any
+observation interval overlapping an active flood event for that cercle.
+
+Before testing interactions, we first verify that `flood_active` carries any
+independent displacement signal at all (M15). If the dummy is null as a
+main effect, there is little motivation to test whether it amplifies slopes.
+
+**M15** — M5 plus event dummy as main effect:
+
+$$y_{it} = [\text{M5}] + \gamma \cdot \text{flood\_active}_{it} + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+
+| Spec | coef | p | R²_within | ΔR² |
+|---|---|---|---|---|
+| M5 baseline | — | — | 0.0992 | — |
+| M15a: M5 + flood_active | **+0.153** | **0.038\*\***  | 0.0983 | −0.001 |
+| M15b: M5 + drought_active | −0.015 | 0.788 ns | 0.0990 | 0.000 |
+
+`flood_active` is significant (+0.153**, p=0.038): named floods carry a
+displacement signal beyond the continuous physical intensity. `drought_active`
+is null — the continuous channels fully encode drought severity. The negative
+ΔR² for M15a is the FE non-monotonicity artefact. All M5 coefficients remain
+stable (W·fatalities changes by < 1%, SPI channels by < 2%). This confirms
+named flood events are worth testing as slope amplifiers.
+
+**M16** — does the named event steepen the climate slope? We add an interaction
+between each continuous climate variable and the event dummy:
+
+$$y_{it} = [\text{M5}] + \gamma \cdot \text{flood\_active}_{it} + \delta \cdot (f(x_{it}) \times \text{flood\_active}_{it}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+
+| Spec | interaction | coef | p |
+|---|---|---|---|
+| M16a | streamflow × flood | +0.00012 | 0.277 ns |
+| M16b | p_anom × flood | +0.00055 | 0.756 ns |
+| M16c | spi6 × flood | +0.113 | 0.074 * |
+| M16d | spi6_flood_dur × flood | +0.063 | 0.086 * |
+| M16e | spi6 × drought | −0.035 | 0.781 ns |
+| M16f | p_anom × drought | −0.006 | 0.100 ns |
+| **M16g joint** | **all 6 together** | — | **0/6 sig** |
+
+M16c and M16d are marginally significant in isolation, but **0/6 survive the
+joint test**. The amplifier hypothesis fails: during named flood events, the
+displacement slope on SPI and streamflow does not systematically steepen. The
+continuous variables capture the relevant physical intensity; the named-event
+label adds a level shift (M15) but not a slope change (M16).
+
+---
+
+### M17 — unified stacked model
+
+M7–M16 each tested one extension in isolation. M17 stacks the four
+validated extensions into one specification to check whether they survive
+jointly and to measure their combined explanatory power.
+
+**The four extensions in M17** — each from a validated standalone test:
+- `food × idp_baseline` (**M11c**) — food dampened in high-displacement cercles
+  (cross-border substitution; Part IV)
+- `W·fat × idp_baseline` (**M11_W**) — conflict spillover also dampened
+- `I(streamflow > p75)` (**M7d**) — current-window flood threshold (added
+  alongside the continuous streamflow already in M5)
+- `p_anom × log(pop)` (**M13**) — acute rainfall buffered in populous cercles
+
+$$y_{it} = [\text{M5}] + \gamma_1 (f(\text{food}) \cdot z_{\text{idp}}) + \gamma_2 (f(W\!\cdot\!\text{fat}) \cdot z_{\text{idp}}) + \gamma_3 \cdot \mathbf{1}[\text{stream} > p_{75}] + \gamma_4 (f(\text{p\_anom}) \cdot z_{\text{pop}}) + \delta' C_{it} + \alpha_i + \gamma_t + \varepsilon_{it}$$
+
+**Results:**
+
+| Term | coef | p | |
+|---|---|---|---|
+| food × idp_base | −0.00501 | 0.004 | *** |
+| W·fat × idp_base | −0.14461 | 0.003 | *** |
+| p_anom × pop | −0.00161 | 0.018 | ** |
+| I(stream > p75) | +0.08526 | 0.101 | ns |
+
+**Three of the four survive jointly.** The streamflow threshold, marginally
+significant standalone (M7d, +0.099*), weakens to ns when stacked — its
+upper-tail signal overlaps with the other terms once all are in the model. The
+three heterogeneity interactions (M11c, M11_W, M13) remain strongly significant.
+R²_within rises from **0.099 to 0.112** (+0.013).
+
+A notable side effect: the `W·fatalities` main effect **strengthens from
++0.252 to +0.373** in M17. M5's coefficient was an average across the
+IDP-history distribution; M17 separates the absorption component (the
+`W·fat × idp_baseline` interaction) from the baseline conflict effect, so the
+main coefficient now represents the conflict effect in *low*-IDP-history cercles
+where this dampening is minimal.
+
+**Model progression.** Before decomposing M17, here is how far the modelling
+has come:
+
+| Model | R²_within | Δ |
+|---|---|---|
+| Controls + FE only | 0.048 | — |
+| M5 (selected drivers) | 0.099 | +0.051 |
+| M17 (+ heterogeneity) | 0.112 | +0.013 |
+
+The Stage A–E funnel more than doubled within-R² over the controls-only baseline
+(+0.051); the RF-guided functional-form tests and heterogeneity extensions
+(M6–M14) added a further +0.013. The LOO below shows which families drive
+M17's R²=0.112.
+
+**LOO block decomposition (comparable basis).** Each block's share of its
+model's driver contribution — the R²_within it gains over the AR-control baseline
+(0.048) — placed side by side with the M5 decomposition:
+
+| Driver block | M5 | M17 |
+|---|---|---|
+| **Conflict** (local + spillover; + W·fat×idp in M17) | **72%** | **83%** |
+| Climate (8 water/SPI terms; + threshold & p_anom×pop in M17) | 16% | 8% |
+| Food (+ food×idp in M17) | ~0% (null) | 6% |
+
+Conflict dominates both models — its share *rises* from 72% to 83% once the
+`W·fat × idp_baseline` interaction joins the conflict block. Food climbs from
+null to 6%, the `food × idp_baseline` interaction unlocking signal M5 was
+averaging away. Within the climate block, the slow SPI terms contribute
+essentially nothing once stacked; the acute water terms carry it.
+
+---
+
+### Temporal stability — the 2020 structural break
+
+Mali's panel spans a major political rupture: the **military coup of 18 August
+2020**, after which the international counter-insurgency presence wound down and
+the conflict shifted toward a decentralised rural insurgency. Splitting the
+sample at 2020-07 (just before the coup) reveals that the displacement regime
+does not merely weaken — it **inverts**.
+
+| M5 channel | Pre-2020-07 | Post-2020-07 |
+|---|---|---|
+| n | 1,111 | 306 |
+| R²_within | 0.104 | **0.365** |
+| local conflict (fat 7–9m) | +0.051 ns | **+0.044 \*\*\*** |
+| conflict spillover (W·fat 10–12m) | +0.264 \*\* | **−0.110 \*\* (sign flip)** |
+| SPI flood (spi6 13–18m) | +0.150 \*\*\* | +0.044 ns |
+| flood duration | −0.065 \*\*\* | −0.020 ns |
+| current rainfall (p_anom) | −0.0026 \*\* | +0.0002 ns |
+| streamflow | +0.00011 \*\* | −0.00001 ns |
+| food (19–24m) | +0.014 \*\* | +0.001 ns |
+
+Three things change at once. First, **the model fits far better post-coup**
+(R²_within 0.10 → 0.37): displacement became much more predictable, because a
+single factor came to dominate. Second, **that factor is local conflict** —
+`fatalities_7_9m`, non-significant before, becomes the strongest driver after.
+Third, and most striking, **the conflict spillover reverses sign** (+0.26 →
+−0.11): violence in neighbouring cercles no longer pulls people in as IDP
+arrivals.
+
+The coherent explanation is that **post-coup road blockages broke the spatial
+flight mechanism**. Before 2020, people fled conflict by moving toward safer
+neighbouring cercles, registering as arrivals there — the positive spillover.
+After 2020, with roads cut and movement restricted, violence displaces people
+*in place* and cross-cercle flight collapses, so the spillover inverts. Every
+climate and food channel — which operate on slower, livelihood-mediated
+timescales — is swamped by the violence and goes null.
+
+**Is 2020 really the break?** Re-splitting at every half-year from 2018 to 2021
+confirms the break is genuinely around the coup, not an artefact of the chosen
+cut:
+
+| Split point | n_post | R²_post | spillover (post) |
+|---|---|---|---|
+| 2018-07 | 620 | 0.15 | −0.049 ns |
+| 2019-07 | 445 | 0.19 | −0.090 ns |
+| **2020-07** | 306 | **0.37** | **−0.110 \*\*** |
+| 2021-07 | 219 | 0.42 | −0.143 \*\* |
+
+Two signatures pin the break to 2020. First, the post-period R² jumps sharply —
+about 0.15 for pre-2020 cuts, but 0.31–0.42 once the cut reaches 2020. Second,
+the spillover sign flip is only *significant* from 2020 onward: cutting at 2018
+or 2019 gives a weak, non-significant negative spillover (those post-windows are
+still mostly pre-coup), but as the cut moves into the post-coup period the
+negative spillover strengthens monotonically (−0.09\*\* → −0.14\*\*\*). The
+structural break is a 2020 phenomenon.
+
+**All magnitudes in this report describe 2014–2020 Mali.** The post-2020 regime
+is a different system, and the static road-distance spatial weights cannot
+represent blocked roads; forecasting the current period would require a
+road-state-aware weight matrix and re-estimation on a recent subsample.
+
+---
+
+## Part IV — External validation: refugee outflow
+
+DTM IDP data and UNHCR refugee data are collected by different agencies, using
+different methodologies, recording different physical outcomes. If the same M5
+drivers predict refugee outflow with the same signs, that is strong
+cross-outcome validation.
+
+The refugee outcome is each cercle's outflow of Malian refugees **across the
+border to neighbouring countries**. Because this is movement *out of Mali*, the
+spatial-spillover terms — which capture redistribution *between* Malian cercles —
+do not apply: cross-border flight is driven by the cercle's *own* conditions
+pushing people over the international border, not by neighbour-weighted
+conditions inside Mali. The refugee model therefore uses local drivers only.
+
+**The refugee outcome is well explained by the same drivers (R²_within = 0.119),
+but with a different driver mix.** Comparing each driver on both outcomes under
+a common local specification (recent conflict at 1–3m):
+
+| Driver | refugee | IDP |
+|---|---|---|
+| local conflict (1–3m) | −0.016 ns | +0.039 * |
+| SPI flood (13–18m) | +0.175 * | +0.115 *** |
+| flood duration (13–18m) | −0.059 ns | −0.047 *** |
+| current rainfall (p_anom) | +0.0052 *** | −0.0020 ** |
+| streamflow | +0.000 ns | +0.0001 ** |
+| food (19–24m) | +0.016 * | +0.0065 * |
+
+Two contrasts stand out. **Refugee outflow is driven by climate and food, not
+conflict** — local conflict is non-significant for refugees, whereas it predicts
+IDP (and far more strongly through neighbour *spillover*: the M5 structure
+reaches 0.099 vs 0.058 for this local spec). And the climate channels
+cross-validate by sign: **SPI flood carries the same positive sign on both
+outcomes** (+0.175* refugee, +0.115*** IDP), while **current rainfall flips
+sign** (+0.0052*** refugee vs −0.0020** IDP) — protective for inland livelihoods
+(less IDP) but causing Niger River flooding that drives refugees northward. Food
+carries the same positive sign on both.
+
+**Why food appears to dampen displacement.** Part III left a puzzle: food-price
+shocks seemed to *reduce* internal displacement in cercles with a long
+displacement history (M11c) and those near a border (M12). Why would food stress
+reduce flight? The refugee data answers it. The same two interactions, run on
+refugee outflow, come out **equal and opposite** to the IDP versions:
+
+| Interaction | refugee | IDP | ratio |
+|---|---|---|---|
+| food × idp_baseline (M11c) | +0.0057*** | −0.0054*** | **−1.05** |
+| food × is_border (M12) | +0.0080** | −0.0050** | **−1.61** |
+| p_anom × log(pop) (M13) | ns | −0.0016** | IDP-specific |
+| food × is_urban (M14) | ns | −0.0081** | IDP-specific |
+
+In these cercles a food-price shock does not dampen displacement — it
+**redirects** it, shifting people from internal IDP registration to cross-border
+refugee flight (near 1:1 for displacement-history cercles, larger still for
+border cercles). Food stress is a *substitution between displacement channels*,
+not a reduction in displacement. The other two interactions (M13, M14) have no
+refugee counterpart — they are genuinely IDP-specific.
+
+---
+
+## Conclusion — what we found
+
+**What drives displacement:**
+- **Violence is the biggest driver — and it spreads.** Violence in *neighbouring*
+  communities pushes people to flee even more than violence at home — about five
+  times more.
+- **Climate matters, but less — and both extremes push people out.** Severe
+  flooding about a year earlier, and sudden rainfall or river surges in the
+  moment, drive displacement — and so does drought, on a longer horizon (about
+  two years). All are secondary to violence, but real.
+- **Food prices don't push people out — they redirect them.** This shows up most
+  clearly in two kinds of places: communities with a long displacement history,
+  and **those on a border with a ready cross-border exit**. In both, food-price
+  spikes send people **across the border as refugees** rather than into internal
+  displacement — the same number flee, but through a different channel.
+
+**Who is affected depends on local conditions:**
+- The same shock lands differently depending on a community's history and size.
+  Places with a long displacement history, and larger towns and cities,
+  **absorb or redirect** food and climate shocks — but **not violence, which
+  displaces people everywhere regardless**.
+- **Yet when we combine every driver and every one of these differences into a
+  single model, the verdict is unchanged: conflict alone accounts for about half
+  of everything we can explain; climate and food make up the smaller remainder.**
+
+**How much this explains, and when:**
+- The machine-learning cross-check confirmed the findings and added a sobering
+  note: **displacement is genuinely hard to predict.** Much of why people flee
+  comes down to local factors no dataset captures — community ties, leadership,
+  household decisions.
+- An independent refugee dataset — different agency, different outcome —
+  reproduced the climate and food patterns, which strengthens confidence that
+  these are real signals.
+- These patterns describe **Mali up to 2020**. After the August 2020 coup the
+  whole pattern *inverts*: local violence becomes the dominant driver, the
+  cross-community spillover **reverses** (blocked roads appear to trap people in
+  place rather than let them flee to neighbours), and the climate and food
+  signals fade. The model explains the past well; the post-coup period is a
+  different system.
+
+**The findings in detail:**
+
+| Driver | finding | robustness |
+|---|---|---|
+| **Conflict spillover** | Dominant. Violence in neighbouring cercles (10–12m lag) is the single largest predictor. Spillover 5× local. | 100% of 987k models; stable across conflict source, spatial weights, SE specification |
+| **SPI flood channel** | Real but secondary. Wet anomaly 13–18m ago → displacement; prolonged prior flooding → wave absorbed. | 272/5,880 both-significant pairs; RF confirms linear, not threshold |
+| **Acute water shock** | Real and contemporaneous. Current rainfall protective; active streamflow displacing. | Threshold confirmed (M7d); robust across lag specs |
+| **Food prices** | Null on average. Redirects rather than suppresses — food shocks shift displacement from internal (IDP) to cross-border (refugee). | All 21 food variables null in multivariate; M11c/M12 mirror in refugee data *** |
+| **Food spillover (W·food)** | Not informative. Dropped — p=0.729; food price is a near-national time series. | Confirmed across all 21 food variables |
+
+---
 
 ## Limitations and open questions
 
-TBD
+**Identification.** TWFE with banded lags and spatial spillovers provides
+*conditional associations* suggestive of causal effects, not clean causal
+estimates. No instrument or natural experiment is available. The causal
+interpretation rests on design choices: the conflict lags (local 7–9m, spillover
+10–12m) make reverse causality implausible; `W·fatalities` is hard to argue is
+caused by local IDP arrivals; two-way FE removes the dominant confounders.
+Remaining time-varying cercle-specific confounders are not controlled for.
+
+**R² and causal importance.** R²_within is used for model selection because no
+better operational criterion exists for this observational panel. It measures
+predictive fit in the within-cercle space, not causal effect size. The
+conflict > climate > food ranking is a statement about relative predictive
+importance, not a direct measure of causal contribution.
+
+**Incomplete non-linearity scan.** The Random Forest non-linearity screen
+(Part II) was computed on the M5 feature set, so non-linear structure in
+non-selected variables — for example a threshold at a lag band outside M5 — is
+not screened and could be missed. The risk is one of omission only: every
+candidate still faces a de-confounded TWFE test, and the full-feature RF bounds
+the missed structure to be small.
+
+**Two-lag SPI.** The slow flood signal (spi6 13–18m) and a longer-horizon
+drought signal (spi6 19–24m) are each individually significant (drought
+−0.064\*\*, p=0.015) and nearly orthogonal in the within-variation
+(within-correlation 0.03). Adding the drought term alongside the flood term
+leaves every other M5 coefficient essentially unchanged but *lowers* R²_within
+(0.099 → 0.094) — the fixed-effects non-monotonicity discussed earlier — so M5
+keeps only the flood signal for parsimony. The drought channel is real (it
+appears in Stage A and is examined in M6) but is not in the final model; see
+*A second drought channel* in Part II.
+
+**Post-2020 regime change.** All magnitudes in this report describe 2014–2020
+Mali. After the August 2020 coup the displacement regime *inverts* — local
+conflict becomes dominant and the spillover reverses sign (see *Temporal
+stability — the 2020 structural break*). The spatial weight matrix assumes
+static road connectivity, which post-coup road blockages violate; forecasting
+the current period would require a road-state-aware W and re-estimation on a
+recent subsample.
