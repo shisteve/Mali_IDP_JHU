@@ -7,9 +7,10 @@
 
 We model monthly changes in log-IDP counts across Mali's 50 admin2 cercles
 (2014–2024) as a function of three candidate driver families: **conflict**,
-**climate**, and **food prices**. Our goal is to identify which drivers
-causally matter, in what form, and at what lag — while being honest about
-what a panel regression can and cannot establish.
+**climate**, and **food prices**. Our goal is to identify the drivers of
+displacement — their **form, lag, and heterogeneity** — and to state **how
+credibly each can be read as causal**, being explicit about what a panel
+regression can and cannot establish.
 
 The analysis proceeds in two parts:
 
@@ -19,6 +20,27 @@ The analysis proceeds in two parts:
 2. **Validation and extensions** (Parts II–IV): Random Forest stress-tests
    the linear model, heterogeneity tests reveal what the average effects hide,
    and the independent refugee-outflow outcome cross-validates the findings.
+
+**Identification — what the design can claim.** We have no instrument or natural
+experiment for the drivers, so these are not clean causal point estimates. But
+the design supports a **graded causal reading**, strongest where it matters most:
+
+- **Two-way fixed effects** remove every time-invariant cercle difference and
+  every common time shock — the dominant confounders.
+- **Drivers enter only at lags** (conflict 7–12m, climate 13–24m), with the
+  contemporaneous window excluded, so reverse causality is implausible.
+- **Climate** (rainfall, SPI, streamflow) is plausibly **exogenous** to local
+  displacement — weather is not caused by who fled — so the climate channel
+  approaches a natural experiment.
+- The headline result, **conflict *spillover*** (neighbour violence), cannot be
+  reverse-caused: a cercle's own displacement cannot have produced its
+  neighbours' *earlier* violence.
+- **Weakest:** *local* conflict (not exogenous) and *food* (a near-national
+  series with little within-cercle variation) — reported with corresponding
+  caution.
+
+We therefore identify the drivers and their structure with **graded causal
+confidence**, not uniform causal certainty.
 
 **Data.** IDP source: DTM survey panel, zero-run-filtered and re-stitched<!-- (`delta_idp_zrt5.csv`). -->Sample: n = 1,417 observations, 44 cercles, after
 requiring complete data for all M5 features. Conflict: ACLED strict (direct
@@ -106,6 +128,18 @@ climate). The **current window** (0 months lag, i.e. the observation period
 `(t1, t2]` itself) is used only for climate and food — conflict in the current
 window is excluded because it risks reverse causality (displacement events may
 *cause* conflict rather than vice versa).
+
+This exclusion is **by design, not by fit**. Added to M5, current-window local
+conflict is in fact positive, significant, and strong (+0.078\*\*, ΔR² = +0.012 —
+*larger* than the lagged 7–9m term). That is precisely the problem: a strong
+*contemporaneous* conflict–displacement association within the same interval is
+exactly what reverse causality would produce (displacement can trigger or
+coincide with violence — retaliation, competition in receiving areas, militia
+activity around camps), and within one window the two directions cannot be
+separated. The lagged design (local 7–9m, spillover 10–12m) is what makes the
+causal reading defensible: past violence can precede later displacement, but
+later displacement cannot have caused past violence. Current conflict is excluded
+not because it fails, but because it *succeeds in a way we cannot interpret.*
 
 **Matching monthly predictors to the irregular intervals.** Conflict, climate,
 and food are monthly series, while the IDP intervals are irregular and — after
@@ -309,6 +343,54 @@ consistently ~10–12m. The local optimal lag is **7–9m** — people fleeing t
 own cercle register 2–3 months faster. The mixed-lag spec (local 7–9m,
 spillover 10–12m) beats the same-lag (10–12m/10–12m) by +0.0027 R².
 
+**Why not a short 1–3m conflict lag?** A natural intuition is that conflict
+should drive displacement *fast* — people flee within weeks of violence, so the
+strongest signal should sit at 1–3m. We tested this directly, ranking every
+local lag band:
+
+| Local conflict lag | ΔR²_within (fatalities) | coef |
+|---|---|---|
+| 1–3m | +0.0075 | +0.038 * |
+| 4–6m | +0.0074 | +0.034 |
+| **7–9m** | **+0.0112** | **+0.049 \*\*** |
+| 10–12m | +0.0078 | +0.035 * |
+
+The 1–3m lag **is significant** — conflict does have a fast component, and the
+intuition is not wrong. But the signal *strengthens* from 1–3m to a peak at
+7–9m, then fades; 1–3m ranks third. The same holds for event counts (1–3m
++0.014, peak 7–9m +0.017). The reconciliation is a **measurement lag, not a
+behavioural one**: our outcome is the change in the *registered* IDP stock, and
+DTM enumerates displaced people months after they actually move. So even local
+flight surfaces in the data at ~7–9m, not 1–3m — the lag reflects *when people
+are counted*, not *when they flee*. The point is decisive for the slow spillover
+channel: forcing all conflict terms to the short lag (local **and** spillover at
+1–3m) collapses the model to R²_within = 0.081, versus 0.099 for the
+registration-aligned mixed-lag spec — a −0.018 loss. The displacement-relevant
+conflict signal is genuinely lagged.
+
+The **spillover term** tells the same story with a twist. Sweeping its lag (local
+held at 7–9m):
+
+| Spillover (W·fatalities) lag | ΔR²_within | M5-backbone R² |
+|---|---|---|
+| 1–3m | +0.0290 \*\*\* | 0.0886 |
+| 4–6m | +0.0271 \*\*\* | 0.0854 |
+| 7–9m | +0.0121 \*\*\* | 0.0574 |
+| **10–12m** | **+0.0398 \*\*\*** | **0.0992** |
+
+Unlike the local term — which rose to a single 7–9m peak and was only marginal at
+1–3m — the spillover is **significant at every lag**, with 1–3m strongly so
+(+0.269 \*\*\*). This is because **conflict is highly autocorrelated**: a cercle
+violent 10–12m ago was usually also violent 1–3m ago, so any window proxies the
+same underlying neighbour-violence signal, and no lag is ever truly "off." The
+1–3m significance is therefore not evidence of a fast spillover channel — it is
+the autocorrelation showing through. The lag that **maximises fit** is still
+10–12m, in both univariate ΔR² (+0.040 vs +0.029 at 1–3m) and the full model
+(0.099 vs 0.089), matching the arrival pipeline: people fleeing a neighbouring
+cercle must travel, then be registered, a slower process than local flight. (The
+7–9m row collapses to 0.057 only because spillover at 7–9m collides with the
+local 7–9m term — a collinearity artifact, not a genuine dip.)
+
 ![Figure 4 — mixed-lag conflict heatmap](figures/fig4_heatmap.png)
 
 **Figure 4.** Best R²_within for every combination of local and spillover
@@ -429,6 +511,15 @@ a cleaner two-channel decomposition: one slow SPI channel and one contemporaneou
 water-shock channel, both independently identified. **M5 is the recommended
 specification.**
 
+**How stable is this choice?** A cercle cluster-bootstrap (200 resamples)
+confirms the *backbone* is robust — conflict spillover and the SPI flood term are
+positive in **100%** of resamples (95% CIs [+0.09, +0.48] and [+0.09, +0.21]) —
+but the *second climate channel* is genuinely close: M4 and M5 are a coin-flip on
+R²_within (M4 > M5 in 52% of resamples). M5 is preferred because M4's temperature
+term is significant in only **23%** of resamples, versus 52–65% for M5's
+acute-water terms. The backbone is therefore solid; the *exact identity* of the
+second climate channel sits at the edge of the data and should be read as such.
+
 
 ### The final model: M5
 ```math
@@ -535,6 +626,40 @@ focal cercle itself because neighbours' floods are directing people away, not
 toward conflict zones. Both signs are empirically robust and mechanistically
 coherent.
 
+**Reading the SPI flood block: three facets, one channel.** M5 carries three
+SPI terms — `spi6` (+0.139), `spi6_flood_dur` (−0.054), and `W·spi6` (−0.311) —
+with mixed signs that can look contradictory in isolation. Three points make the
+block readable as a single flood channel rather than three competing numbers.
+
+*They are not redundant.* The three correlate in a **star** pattern: `spi6` is
+the hub (within-corr +0.46 with duration, +0.42 with the spillover), but duration
+and the spillover are essentially independent of each other (+0.09). All three
+VIFs are low (1.2–1.55), so each is **separately identified** — this is an
+interpretation question, not a collinearity problem, and (as the robustness
+section shows) dropping the spillover would artificially shrink the local term.
+
+*On a common scale they matter comparably — and the big coefficient is the
+smallest effect.* `W·spi6`'s −0.311 looks dominant, but it sits on a variable
+that barely varies within a cercle (within-SD 0.12). Per 1-SD within shock the
+three standardized effects are +0.055 (`spi6`), −0.059 (duration), and −0.037
+(`W·spi6`) — comparable in size, with the headline-grabbing spillover actually
+the *weakest* in practice.
+
+*What a reader should take away.* Because a real flood moves these together, the
+net effect depends on the *type* of flood:
+
+| Flood scenario | net standardized effect |
+|---|---|
+| **Sharp local flood** (intense, short, neighbours dry) | **+0.055** — displaces |
+| Prolonged local flood (intense **and** long) | −0.004 — ≈ cancels (duration absorbs) |
+| Regional flood (local **and** neighbours wet) | +0.018 — neighbour absorption offsets ~⅔ |
+| Widespread prolonged flood (all three) | −0.041 — net dampening |
+
+The bottom line is simple: **a sharp, localised flood drives displacement; a
+prolonged or widespread one does not** — because duration drains the vulnerable
+population in advance and neighbouring floods redistribute people across cercles.
+The three coefficients are the machinery; this table is the message.
+
 **Acute water channel** — unlike SPI which captures rainfall accumulated over
 months, this channel operates in the **current observation window**:
 
@@ -600,8 +725,8 @@ We exploit this difference in two ways:
    5-fold cross-validation (OOS R²)** — "OOS" means *out-of-sample*, i.e. the
    model is fit on some cercles and evaluated on held-out cercles it has never
    seen. This prevents overfitting and gives an honest estimate of how well the
-   model generalises. The M5-restricted RF (14 features) achieves OOS R² = 0.089
-   — *better* than the full 282-feature RF (0.075). Adding 268 more features
+   model generalises. The M5-restricted RF (13 features) achieves OOS R² = 0.085
+   — *better* than the full 282-feature RF (0.075). Adding 269 more features
    hurts generalisation, confirming that M5's variable selection is not just
    good for in-sample fit but also predictively sound.
 
@@ -642,12 +767,12 @@ prevents inflated importance scores.
 | RF variant | features | OOS R² |
 |---|---|---|
 | Full demeaned (282 features) | all candidate features, within-transformed | 0.075 ± 0.066 |
-| **M5-restricted demeaned** | 14 M5 features, within-transformed | **0.089 ± 0.041** |
+| **M5-restricted demeaned** | 13 M5 features, within-transformed | **0.085 ± 0.041** |
 | Full raw (282 features) | raw features + entity OHE + month index | 0.144 ± 0.061 |
-| M5 raw | 14 M5 features, raw | 0.121 ± 0.043 |
+| M5 raw | 13 M5 features, raw | 0.123 ± 0.046 |
 
-M5-restricted RF achieves better OOS R² than the full 282-feature RF (0.089 vs
-0.075) — adding 268 more features actively hurts generalisation, confirming
+M5-restricted RF achieves better OOS R² than the full 282-feature RF (0.085 vs
+0.075) — adding 269 more features actively hurts generalisation, confirming
 that TWFE's variable selection is predictively sound.
 
 **Why not the raw variants, despite their higher OOS R²?** Their extra accuracy
@@ -662,10 +787,101 @@ a cercle's baseline predicts its displacement level but says nothing about what
 benchmark that matches TWFE's causal question; the raw R² = 0.144 is reported
 only as the prediction ceiling, not as a candidate model.
 
-**Non-linearity scores.** For each M5 feature we compute a non-linearity score —
-how much of its RF predictive contribution comes from non-linear splits vs a
-linear approximation. A score near 1.0 means the RF is heavily exploiting
-non-linear structure; near 0 means the feature is essentially linear:
+**Permutation importance — which features carry the prediction?** Before asking
+*how* features act (non-linearity, below), we ask *which* ones the best variant —
+the M5-restricted demeaned RF — actually leans on out-of-sample:
+
+| Feature | perm. importance (held-out) |
+|---|---|
+| **log1p_idp_t1 (AR control)** | **+0.115** |
+| W·spi6_flood_dur | +0.019 (noisy, ±0.013) |
+| spi6_13_18m | +0.008 |
+| W·fatalities | +0.007 |
+| streamflow_cur | +0.005 |
+| fatalities_7_9m (local) | +0.005 |
+| food, p_anom, remaining terms | ≈ 0 |
+
+Three observations. First, **the AR control dominates prediction** — an order of
+magnitude above any driver. Mean reversion is most of the *predictable* signal,
+matching Part I's decomposition (controls alone explain 0.048 of M5's 0.099).
+Second, among the drivers, **the SPI-flood and conflict terms top the list and
+food is ≈ zero** — consistent with the TWFE family ranking (conflict and climate
+real, food null), though not a clean conflict > climate ordering: permutation
+importance is an out-of-sample *predictive* metric under entity-blocked CV,
+which penalises sparse, spiky conflict shocks and splits credit between
+correlated local/spillover twins. Third, on the **full 282-feature RF** the
+conflict group's summed importance is ≈ 0 while climate's is positive — an
+artifact of unequal group sizes (224 climate features vs 16 conflict) and
+importance-sharing among correlated lags. These distortions are exactly why the
+driver ranking in this report rests on the TWFE LOO decomposition, not on RF
+importance: the RF importances are used only as a coarse cross-check (food null
+confirmed; AR dominance confirmed), not as a causal ordering.
+
+The AR control's dominance reflects the **persistence of displacement stocks**,
+not the unimportance of the drivers: prediction rewards persistence (knowing
+where the stock is today is the best guide to where it will be next), while the
+drivers' role — modest in predictive terms — is the causally interpretable
+signal the rest of the report quantifies.
+
+Importance tells us *where* the predictive signal lives; it says nothing about
+*what shape* it takes. The next step — the section's misspecification-diagnostic
+purpose — asks whether the RF uses each feature **linearly** (in which case
+TWFE's linear coefficient already captures it) or **non-linearly** (structure
+the linear model might miss). With only eleven M5 driver features this scan is
+cheap, so non-linearity scores are computed for **all** of them, not only the
+important ones. Importance is therefore not a gate but the **interpretive key**: the
+non-linearity score is normalised to each feature's *own* contribution, so a
+high score on a near-zero-importance feature means the forest is sharply bending
+a feature it barely uses — likely noise — while non-linearity on a feature with
+genuine importance deserves a formal test. (The same scan, extended to all 282
+candidate features, is reported below — it surfaces no new driver.)
+
+### How we detect non-linear terms and classify their form
+
+The RF gives us three complementary diagnostics, all built from the
+**partial-dependence plot (PDP)** — the RF's estimated average response of the
+outcome to a feature (or pair), holding the others fixed. Each answers a
+different question:
+
+| Diagnostic | Built from | Answers |
+|---|---|---|
+| **Non-linearity score** = 1 − R²(linear fit of the PDP) | 1D PDP of one feature | *Is* the effect non-linear? (0 = straight line, 1 = fully non-linear) |
+| **PDP shape** | the same 1D PDP, read visually | *Which* form — a step or a smooth bend? |
+| **Friedman H-statistic** | 2D PDP of a feature pair | Do two features *interact* (joint effect ≠ sum of separate effects)? |
+
+The procedure has two stages:
+
+**Stage 1 — detect.** The non-linearity score scans every M5 feature and flags
+those whose response departs from a straight line; the H-statistic scans every
+pair and flags those that move together. This is purely a *nomination* step — it
+says *that* something non-linear is present, not what it is.
+
+**Stage 2 — classify the form.** For each flagged feature we read the PDP shape
+to decide which single functional form to test:
+
+- **flat, then a jump (step)** → a **threshold**: test a dummy `I(x > pN)`
+- **smooth monotone bend** → a **curve**: test a **quadratic** `x²`
+- a curve that only bends when a *second* feature is high (flagged by the
+  H-statistic) → an **interaction**: test the product `x × z`
+
+So the three candidate forms — threshold, quadratic, interaction — are *not* all
+tried on every feature; the PDP/H-stat points to exactly one, and only that one
+is tested. The whole decision, with how each case actually resolved in TWFE:
+
+| PDP / diagnostic signature | → form tested | worked example (verdict) |
+|---|---|---|
+| flat, then a jump (step) | **threshold** `I(x > pN)` | M7 streamflow ✅ (real) |
+| smooth monotone bend | **quadratic** `x²` | M9 conflict ❌ (log1p artefact) |
+| bends only when a 2nd feature is high (high H-stat) | **interaction** `x × z` | M8 fatal × flood-dur ❌ |
+| "step" but the variable is mostly zero | *false alarm* (zero-inflation) | flood-duration ❌ |
+
+Two cautions the worked examples illustrate: a PDP can *look* like a step purely
+because a variable is mostly zero (the flood-duration case), and any RF shape is
+only a hypothesis — the TWFE fit (two-way FE, clustered SE) is the verdict.
+
+**Non-linearity scores (Stage 1 — detect).** Applying the score defined above to
+every M5 feature — 1.0 means the PDP is fully non-linear, near 0 means the
+feature is essentially a straight line:
 
 | Feature | nl score | what this flags |
 |---|---|---|
@@ -686,16 +902,21 @@ non-linear structure; near 0 means the feature is essentially linear:
 facets that linear M5 estimates separately, here recovered by a model that
 assumes no functional form.
 
-**The flood-duration "step" is not a true threshold.** `spi6_flood_dur` is zero
-for ~two-thirds of observations (no flood), which gives its PDP the stepped
-appearance. Tested in TWFE, a threshold dummy `I(flood_dur > pN)` adds nothing
+**Stage 2 — classify (and a cautionary case): the flood-duration "step" is not a
+true threshold.** Reading the PDP shape, `spi6_flood_dur` appears to step down —
+which the rule would send to a threshold test. But `spi6_flood_dur` is zero for
+~two-thirds of observations (no flood), and it is this **zero-inflation** that
+gives the PDP its stepped look, not a genuine regime change. Tested in TWFE, a
+threshold dummy `I(flood_dur > pN)` adds nothing
 beyond the continuous term (non-significant when included alongside it) and fits
 *worse* when it replaces it (R² falls) — so M5 keeps the continuous
 wave-absorption term. Like M9–M10, an RF shape need not survive a fixed-effects
 test.
 
-**Top interaction H-statistics** (Friedman H — how much the joint partial
-dependence of two features exceeds the sum of their individual effects):
+**Interaction detection — top H-statistics** (Friedman H — how much the joint
+partial dependence of two features exceeds the sum of their individual effects;
+this is the third diagnostic, nominating *interaction* terms rather than
+single-feature forms):
 
 | Feature 1 | Feature 2 | H-stat | type |
 |---|---|---|---|
@@ -703,58 +924,50 @@ dependence of two features exceeds the sum of their individual effects):
 | `fatalities_7_9m` | `W·p_anom_cur` | 0.157 | conflict × climate |
 | `W·fatalities_10_12m` | `streamflow_cur` | 0.146 | conflict × climate |
 
-### What we test in TWFE and why
+### From RF flag to TWFE test
 
-The non-linearity score tells us *that* a feature's response is non-linear,
-but not *what form* the non-linearity takes. For this we inspect the **1D
-Partial Dependence Plot (PDP)** — the RF's estimated average response of the
-outcome to each feature, holding others fixed. The PDP shape guides which
-TWFE test to run:
+Applying the framework above, each RF flag becomes **one** targeted TWFE test of
+the form its PDP (or H-statistic) points to — a threshold dummy, a quadratic, or
+a product interaction — never a blind sweep of all three. The PDP pre-selects
+both *which feature* to test and *which functional form* to try; the H-statistic
+does the same for interaction pairs. Every nomination is then settled in TWFE
+with two-way FE and clustered SE: the RF shape is the hypothesis, the TWFE
+coefficient is the verdict.
 
-- **Step-function PDP** (flat then jumps at a threshold) → test a **threshold
-  dummy** `I(x > pN)` in TWFE, either replacing or alongside the continuous term
-- **Curved PDP** (monotone but bent) → test a **quadratic term** `x²`
-- **PDP that flattens only when another feature is high** → test a **product
-  interaction** `x × z`
+**Could a purely non-linear driver have been missed?** The funnel screens with
+*linear* coefficients, so a feature whose effect is purely non-linear — a
+threshold or U-shape with no linear component — would be invisible to it
+end-to-end, and the M5-focused scan above would never look at it. Two checks
+close this gap.
 
-This means we do **not** blindly run all three tests for every flagged feature.
-The PDP pre-selects both *which feature* to test and *which functional form*
-to try, reducing the number of TWFE tests to those with a clear visual
-motivation. The H-statistic from 2D PDPs similarly nominates the most promising
-interaction pairs rather than testing all combinations.
+First, the indirect bound: a Random Forest given the **full 282-feature set** —
+free to exploit any non-linear structure — generalises no better out-of-sample
+(OOS R² = 0.075) than the M5-restricted forest (0.085), so no *large*
+non-linear signal can be hiding among the non-selected features.
 
-Every nominated test is then run in TWFE with two-way FE and clustered SE —
-the RF signal is only a nomination, the TWFE result is the verdict.
-
-**A limitation of this approach.** The non-linearity scan is computed on the M5
-feature set, so it can only flag non-linear structure in variables the linear
-funnel already selected. Non-linear effects in *non-selected* features — for
-instance a threshold at a lag band not in M5 — are not screened and could be
-missed. Because every nomination still faces a de-confounded TWFE test, this can
-never admit a spurious effect; the risk is purely one of **omission**.
-
-That omission has limited consequence, and the cross-validation results bound it.
-A Random Forest given the **full 282-feature set** generalises no better
-out-of-sample (OOS R² = 0.075) than one restricted to M5's twelve features
-(0.089) — adding the other 270 features, with all their potential non-linear
-structure, does not improve prediction on held-out data. Whatever non-linearity
-exists in the non-selected features, a flexible learner cannot turn it into
-out-of-sample signal. Combined with the functional-form tests on the M5 features
-themselves (M6–M10), which found almost no non-linearity surviving a
-fixed-effects test, this bounds the missed structure to be small. The
+Second, the direct check: we extended the non-linearity scan to **all 282
+candidates**, crossed with their held-out permutation importance. Four non-M5
+features combine non-trivial importance with high non-linearity. Tested in TWFE
+(linear, quadratic, and threshold forms added to M5), three are null, and the
+fourth — `spi6_drought_duration_19_24m` (nl = 0.97; 79% zeros, so the score is
+the zero-inflation shape) — is significant as a drought-*occurrence* dummy
+(+0.10\*\*\*) but is simply the duration facet of the **already-documented
+drought channel** (M6: same 19–24m band, same fixed-effects non-monotonicity
+that keeps it out of M5). The non-linear blind spot conceals no new driver: the
 functional-form tests refine the *shape* of drivers the model already
-identified; they cannot change *which* families drive displacement.
+identified; they do not change *which* families drive displacement.
 
 ### Functional-form tests (M6–M10)
 
-The RF flagged five candidates for TWFE testing — three from elevated nl_scores,
-one from a top H-statistic, and one additional test motivated by the Stage A
-screen (the spi6_19_24m drought signal that narrowly missed BH correction):
+The RF flagged five candidates for TWFE testing — two from elevated nl_scores
+(M7, M9), one from a top H-statistic (M8), one from a high raw-RF rank (M10),
+and one additional test motivated by the Stage A screen (M6 — the spi6_19_24m
+drought signal that narrowly missed BH correction):
 
 | Test | RF motivation | TWFE test form | TWFE verdict |
 |---|---|---|---|
 | **M6** spi6 19–24m drought | Stage A rank 7 (nl=0.025, not RF-flagged) | add `spi6_19_24m` as second SPI lag | ❌ significant alone but R²_within drops |
-| **M7** streamflow threshold | nl=0.85 — step-function PDP | `I(stream > p75)` dummy ± continuous | ✅ threshold ** displaces continuous term |
+| **M7** streamflow threshold | nl=0.85 — strongly non-linear PDP | `I(stream > p75)` dummy ± continuous; threshold-location sweep (Fig 7) | ✅ threshold ** at the zero-anomaly boundary; displaces continuous term |
 | **M8** fatal × flood-dur interaction | H=0.21, top conflict×climate pair | product term `fatal × spi6_flood_dur` | ❌ all interaction terms ns |
 | **M9** conflict non-linearity | nl=0.37 — moderately non-linear PDP | quadratic `[log1p(fat)]²` + threshold | ❌ all null — log1p transform artefact |
 | **M10** food non-linearity | high raw-RF rank (not demeaned RF) | quadratic, threshold, interaction, shorter lag | ❌ all null — entity FE absorbs |
@@ -812,9 +1025,11 @@ variants, labelled M7a, M7b, … to distinguish them:
 | **c** | M5 + `fatal × I(stream>p75)` | M5 + `fatal × W·flood_dur` (local×W·spillover) |
 | **d** | M5 + `I(stream>p75)` *alongside* continuous | M5 + all three jointly |
 
-**M7 — streamflow upper-tail threshold.** The RF's step-function PDP for
-streamflow suggests the displacement effect is concentrated in the upper tail.
-The question is: what functional form best captures this?
+**M7 — streamflow upper-tail threshold.** The RF flagged streamflow as strongly
+non-linear (nl = 0.85), but the partial-dependence curve alone is irregular and
+does *not* pin down a threshold location. Two questions follow: what functional
+form captures the non-linearity, and — if a threshold — *where* does the cut
+belong?
 
 `streamflow_anom_1m` is a **signed anomaly** — departures from the climatological
 mean, with 70% of observations negative (below-average river flow). Two
@@ -845,6 +1060,33 @@ the full distribution. M7d adds +0.001 R²: the threshold captures the upper-tai
 jump (+0.099*), while the continuous streamflow drops to ns. The mechanism is a
 **directional threshold crossing** — above-average river flow drives displacement;
 below-average or moderate flow does not.
+
+**Why the cut sits at p75 — and what "p75" really means.** Rather than tune the
+quantile to maximise fit, we swept the cut across the distribution and re-fit M5
+at each location (Figure 7). The dummy is significant in one narrow band —
+roughly p65–p75 — and null everywhere else. The reason is physical, not
+statistical: ~70% of streamflow anomalies are negative, so a cut anywhere in the
+p65–p75 range falls at the **zero-anomaly boundary** (raw values ≈ 0.0). The
+threshold that works is therefore not a tuned percentile but a *directional*
+one — "river above its seasonal norm." Cut lower (p50–p60) and the dummy is
+diluted with below-average months and goes null; cut deeper into the positive
+tail (p80+) and it weakens, then at p90 flips to a significant *wrong* sign as it
+splits the upper tail on a sparse handful of observations. p75 is simply the
+conventional quartile sitting inside the boundary window.
+
+![Figure 7 — how the streamflow threshold was found](figures/fig7_threshold_sweep.png)
+
+**Figure 7. How the threshold was found: RF nominates, TWFE locates.**
+*(A)* The Random Forest partial-dependence curve for current streamflow flags
+strong non-linearity (nl = 0.85) but is irregular — there is no clean step at any
+single cut, so the PDP alone cannot tell us where a threshold belongs.
+*(B)* We therefore sweep the cut in TWFE: each point is the coefficient on
+`I(stream > q)` added to M5 as `q` ranges from p50 to p90 (95% CI; the raw
+anomaly value of each cut shown beneath the axis). Solid markers are significant
+at 5%, faded are not. The dummy works only in the shaded p65–p75 band, where the
+cut coincides with the **zero-anomaly boundary** (above/below-average river
+flow); it is null below and reverses sign at p90. This fixes the threshold at
+"above-normal flow," with p75 the conventional quartile inside that window.
 
 Critically, **all other M5 coefficients are essentially unchanged in M7d**:
 
@@ -1048,7 +1290,7 @@ shocks that would displace people in smaller, more food-dependent cercles.
 The interaction coefficients tell a precise story about how population moderates
 each channel.
 
-**Acute rainfall (`p_anom × pop`, −0.00181***):** In small cercles (−1 SD
+**Acute rainfall (`p_anom × pop`, −0.00181\*\*\*):** In small cercles (−1 SD
 population), the rainfall slope is **+0.00075** — rainfall *increases*
 displacement. In large cercles (+1 SD), the slope is **−0.00287** — rainfall
 is strongly protective. The sign actually *flips* across the population
@@ -1239,7 +1481,7 @@ R²_within rises from **0.099 to 0.112** (+0.013).
 **Figure 6.** M17 (stacked model) coefficients as **standardized effects**
 (change in monthly log-IDP growth per 1-SD within-cercle shock), with 95% CIs;
 faded = not significant. Above the line are the M5 main effects; below are the
-four heterogeneity extensions (M11c, M11_W, M15, M7d threshold). The acute-water
+four heterogeneity extensions (M11c, M11_W, M13, M7d threshold). The acute-water
 main effects (`p_anom`, `streamflow`) lose *individual* significance here because
 their signal is partly absorbed by the `p_anom × log(pop)` interaction and the
 streamflow threshold. **†** `W·fat × idp_base` does not survive the dynamic-panel
@@ -1353,8 +1595,8 @@ road-state-aware weight matrix and re-estimation on a recent subsample.
 ## Part IV — External validation: refugee outflow
 
 DTM IDP data and UNHCR refugee data are collected by different agencies, using
-different methodologies, recording different physical outcomes. If the same M5
-drivers predict refugee outflow with the same signs, that is strong
+different methodologies, recording different physical outcomes. If the same
+driver families predict refugee outflow with coherent signs, that is strong
 cross-outcome validation.
 
 The refugee outcome is each cercle's outflow of Malian refugees **across the
@@ -1363,6 +1605,19 @@ spatial-spillover terms — which capture redistribution *between* Malian cercle
 do not apply: cross-border flight is driven by the cercle's *own* conditions
 pushing people over the international border, not by neighbour-weighted
 conditions inside Mali. The refugee model therefore uses local drivers only.
+
+**Outcome and specification.** The refugee outcome is `log1p` of the **average
+monthly outflow** over the same survey interval `(t1, t2]` used for IDP — a flow
+level, where the IDP outcome is a per-month growth rate of a stock; both are
+log-scale per-month quantities aligned to identical intervals (n = 1,417). The
+specification keeps two-way FE, clustered SE, and the same controls, with **six
+local drivers**: five are M5's local terms (SPI flood and duration, current
+rainfall and streamflow, food), and conflict enters at a refugee-tuned **1–3m
+lag** — cross-border flight responds to *recent local* violence directly, with
+none of the registration delay that gives IDP its 7–12m conflict lags. Because
+the outcomes are on different scales (flow level vs growth rate), the mirror
+ratios below indicate equal-and-opposite *responses*, not a person-for-person
+accounting identity.
 
 **The refugee data is sparse and geographically concentrated.** Unlike internal
 displacement, which is spread across the country, cross-border outflow is
@@ -1440,7 +1695,7 @@ strong.
 |---|---|---|---|
 | M5 conflict spillover | +0.251\*\*\* | +0.208\*\*\* | robust (−17%) |
 | food × idp_base (M11c) | −0.0050\*\*\* | −0.0030\*\* | robust |
-| p_anom × log(pop) (M15) | −0.0016\*\* | −0.0018\*\*\* | robust |
+| p_anom × log(pop) (M13) | −0.0016\*\* | −0.0018\*\*\* | robust |
 | I(stream > p75) | +0.085 ns | +0.080 ns | stable |
 | **W·fat × idp_base (M11_W)** | **−0.145\*\*\*** | **−0.020 ns** | **not robust** |
 | spillover, pre-2020 | +0.264\*\* | +0.241\*\*\* | robust |
@@ -1449,7 +1704,7 @@ strong.
 Three conclusions:
 
 1. **The headline results are robust.** The conflict spillover (M5), the
-   food-substitution interaction (M11c), and the population buffer (M15) all
+   food-substitution interaction (M11c), and the population buffer (M13) all
    survive the correction with the same signs and significance; the bias shaves
    only ~17% off the conflict spillover.
 2. **The structural break holds in direction.** The spillover is positive
@@ -1464,6 +1719,109 @@ Three conclusions:
    independently corroborated by the refugee mirror (Part IV).
 
 <!-- (Reproducible via `scripts/run_dynamic_panel.py`.) -->
+
+---
+
+## Robustness — dropping the climate spillover terms
+
+Only one of the four climate spillover terms is significant (`W·spi6_13_18m`,
+−0.311\*\*); the other three (`W·spi6_flood_dur`, `W·p_anom`, `W·streamflow`)
+are null. A natural question is whether the conclusions depend on these weak
+neighbour-climate terms at all. We refit both M5 and M17 with all four climate
+spillovers removed.
+
+| Quantity | M5 full | M5 no-CS | M17 full | M17 no-CS |
+|---|---|---|---|---|
+| R²_within | 0.099 | 0.095 | 0.112 | 0.110 |
+| conflict (local + spillover) | — | unchanged | — | unchanged |
+| food / M11c / M11_W / M13 | — | unchanged | — | unchanged |
+| `spi6_13_18m` (local flood) | +0.139 | **+0.107** | +0.121 | **+0.091** |
+| `spi6_flood_dur` | −0.054 | −0.044 | −0.042 | −0.031 |
+
+Two conclusions. **First, every headline result is robust:** conflict dominance,
+the food substitution interaction (M11c), the conflict wave-absorption
+interaction (M11_W), and the population buffer (M13) are all unchanged in sign
+and significance; the fit barely moves (−0.005 in M5, −0.002 in M17). The
+displacement story does not rest on the neighbour-climate terms.
+
+**Second, the climate spillovers cannot simply be deleted as noise.** The local
+SPI term and its spillover are an *amplifying pair*: within-cercle they correlate
++0.42 with **opposite** signs (local +0.139, spillover −0.311), which by the
+suppression/amplification rule means each inflates the other. Dropping the
+spillover therefore shrinks the local SPI coefficient by ~23% (+0.139 → +0.107 in
+M5; +0.121 → +0.091 in M17). The neighbour-flood signal is real and coupled to
+the local one, not redundant — the moderate cross-cercle correlation of rainfall
+(p_anom +0.57, spi6 +0.42) is enough to entangle the pair but not enough to make
+the spillover disposable. We retain the full spillover set so the local SPI
+coefficient is not artificially deflated.
+
+<!-- (Reproducible via the M5/M17 climate-spillover-drop check.) -->
+
+---
+
+## Robustness — out-of-time validation
+
+All cross-validation elsewhere in this report is **entity-blocked** (held-out
+*cercles*). A reviewer rightly asks whether the model also generalises across
+*time*. We re-ran the M5 out-of-sample test holding out **time** instead of
+cercles (RF on within-cercle–transformed M5 features, entity means computed on
+the training fold only):
+
+| Validation scheme | OOS R² |
+|---|---|
+| Held-out cercles (entity-blocked, same pipeline) | **+0.070** |
+| Held-out time (contiguous 5-fold) | −0.24 |
+| Forward-chaining (train past → test future) | −0.40 |
+| Train pre-2020 → test post-2020 | −1.05 |
+| Within pre-2020: early → late | −0.32 |
+
+The model **generalises across space but not across time**: every time-blocked
+scheme yields a *negative* OOS R² (worse than predicting the mean). This is **not
+solely the 2020 coup** — the within-pre-2020 early→late split is also negative, so
+the driver→displacement mapping is **non-stationary throughout the panel**.
+Mechanically, a substantial part of the in-sample within-R² rests on the *time*
+fixed effects (common annual/seasonal shocks), which by construction carry no
+out-of-time predictive content; the drivers alone do not predict the time path.
+
+**Implication.** The findings should be read as explaining **within-period,
+cross-cercle variation** — *why some cercles displace more than others in a given
+period* — not as a forecast of *when* displacement will rise. Operational
+forecasting would require re-estimation on a recent window and a
+non-stationarity-aware design. (Reproducible via `scripts/run_temporal_cv.py` and
+`scripts/run_m5_bootstrap.py`.)
+
+---
+
+## Robustness — post-selection inference and model stability
+
+The funnel searches a large space (up to 3.9M specifications), so the final
+**p-values are post-selection** — the same data selected *and* tested the model,
+biasing them toward significance. They should be read as **descriptive, not
+confirmatory**. Confirmation instead rests on four out-of-selection checks:
+
+1. **Selection stability** (cluster bootstrap, 150 resamples, *re-running the
+   selection each time*). The backbone is robustly re-selected: conflict anchor =
+   `fatalities` **84%**, spillover lag = 10–12m **89%**, channel-1 = SPI (top
+   both-significant pair) **79%**. The finer choices are not: the local conflict
+   lag is 7–9m in only **40%** (4–6m 31%, 1–3m 18%), and the second climate
+   channel is a coin-flip — but M5's acute-water terms are significant in 36% of
+   resamples vs **8%** for M4's temperature, which justifies the M5-over-M4 choice.
+2. **Pre-specified replication** (no search). Three parsimonious, theory-lagged
+   models (conflict local + spillover at a round lag, one climate term, one food
+   term) all reproduce the headline — conflict spillover **+0.28 to +0.32\*\*\***,
+   dwarfing local conflict (+0.04\*\*), with **food null** throughout; conflict
+   accounts for essentially all of the driver contribution. The ranking is not an
+   artifact of the search.
+3. **External replication.** The independent refugee outcome (Part IV) reproduces
+   the climate and food patterns.
+4. **Out-of-time validation** (previous section) — done, and honestly negative.
+
+**Reading.** Treat the funnel as exploratory *selection*; the **backbone**
+(conflict spillover, SPI flood, food-null) is confirmed by stability +
+pre-specification + external replication, while the **finer** selections (exact
+local lag, second climate channel) are correctly held as suggestive.
+(Reproducible via `scripts/run_selection_bootstrap.py` and
+`scripts/run_prespecified.py`.)
 
 ---
 
@@ -1500,6 +1858,10 @@ Three conclusions:
 - An independent refugee dataset — different agency, different outcome —
   reproduced the climate and food patterns, which strengthens confidence that
   these are real signals.
+- **On causality:** the strongest causal reading is for **climate** (weather is
+  exogenous) and **conflict spillover** (neighbour violence can't be caused by
+  local displacement); *local* conflict and food are weaker and should be read as
+  credible **associations**, not proven effects.
 - The main results also survive a **dynamic-panel robustness check** (correcting
   for how the model carries past displacement forward): the conflict, climate,
   and food-redirection findings all hold. The one exception is a *secondary*
@@ -1527,15 +1889,61 @@ Three conclusions:
 
 ## Limitations and open questions
 
-**Identification.** TWFE with banded lags and spatial spillovers provides
-*conditional associations* suggestive of causal effects, not clean causal
-estimates. No instrument or natural experiment is available **for the drivers
-themselves** (the dynamic-panel correction above instruments only the lagged
-outcome, not conflict, climate, or food). The causal
-interpretation rests on design choices: the conflict lags (local 7–9m, spillover
-10–12m) make reverse causality implausible; `W·fatalities` is hard to argue is
-caused by local IDP arrivals; two-way FE removes the dominant confounders.
-Remaining time-varying cercle-specific confounders are not controlled for.
+**Identification — graded, not uniform.** We have no instrument or natural
+experiment for the drivers themselves (the dynamic-panel correction above
+instruments only the lagged *outcome*, not conflict, climate, or food), so these
+are not clean causal point estimates. The design nonetheless supports a graded
+causal reading: two-way FE removes all time-invariant confounders and common
+shocks; drivers enter only at lags (local 7–9m, spillover 10–12m for conflict;
+13–24m for climate) with the contemporaneous window excluded, making reverse
+causality implausible; **climate** is plausibly exogenous to displacement
+(weather is not caused by flight); and the headline **conflict-spillover** effect
+cannot be reverse-caused by local IDP counts (`W·fatalities` is hard to argue is
+produced by local arrivals). The credible-causal claim is **strongest for
+climate and conflict-spillover**, weaker for *local* conflict (not exogenous) and
+*food* (little within-cercle variation), and is bounded throughout by remaining
+**time-varying** cercle-specific confounders, which FE does not remove.
+
+**Net stock changes, not gross flows.** The outcome is the change in the
+registered IDP *stock* (`Δlog1p(IDP)`) — the **net** of arrivals − departures −
+returns − attrition over each interval. It cannot decompose gross inflows from
+outflows: a small net change can mask large offsetting flows, and
+"arrivals/departures" language (e.g. for the conflict spillover) is **mechanism
+inference, not direct measurement**. Three things mitigate this: the net stock is
+itself the policy-relevant displacement *burden*; the local/spillover split is a
+partial directional proxy (the positive spillover is most plausibly *arrivals*,
+since neighbour violence has no channel to reduce the focal cercle's own
+departures); and Part IV's refugee outflow is a genuine **gross flow** that
+cross-validates the climate/food patterns. Returns-home and mortality are
+nonetheless folded into the net change and cannot be separated.
+
+**Edge-of-data claims.** The panel is thin (n = 1,417; 44 cercles; ~65% of raw
+changes zero), and some analyses push to its limits — the 2020 structural break
+(post-period n = 306), the fine heterogeneity interactions, the three-way SPI
+decomposition, and a 3.9M-model search (multiple comparisons). The **headline
+trio is robust** — conflict dominance, climate secondary, food-redirect —
+supported by out-of-sample RF cross-validation (the M5-restricted forest
+generalises *better* than the full-feature one) and by parsimony chosen
+deliberately *because* the data is thin. The **finer claims** (post-2020 regime,
+detailed heterogeneity, SPI sub-facets) are **suggestive, edge-of-data** results
+— consistent with the graded-confidence framing and the explicitly low
+predictability (R² ≈ 0.10–0.14).
+
+**Out-of-time non-generalization.** The model is validated on held-out *cercles*,
+not held-out *time*. A direct out-of-time test (forward-chaining and pre/post-2020
+hold-outs) yields **negative** OOS R² — *including within the pre-2020 regime* —
+so the driver→displacement relationship is **non-stationary** and the model does
+not forecast the time path. The results explain cross-cercle variation within a
+period, not period-to-period movements; forecasting would require re-estimation
+on a recent window. See *Robustness — out-of-time validation*.
+
+**Post-selection inference.** The funnel's p-values are computed on the same data
+used to select the model and are therefore **not valid confirmatory p-values**
+(selective inference / winner's curse). We treat selection as exploratory; the
+backbone is confirmed *out of selection* — bootstrap selection stability
+(re-selected 79–89%), a pre-specified no-search replication, and the refugee
+external check — not by the post-selection p-values, which should not be
+over-interpreted. See *Robustness — post-selection inference and model stability*.
 
 **R² and causal importance.** R²_within is the primary fit criterion for model
 selection, applied alongside the p-value and coefficient-sign criteria. It is
@@ -1546,12 +1954,13 @@ cross-validation). Crucially, R²_within measures explanatory fit, not causal
 effect size: the conflict > climate > food ranking reflects relative
 *explanatory* importance, not a direct measure of causal contribution.
 
-**Incomplete non-linearity scan.** The Random Forest non-linearity screen
-(Part II) was computed on the M5 feature set, so non-linear structure in
-non-selected variables — for example a threshold at a lag band outside M5 — is
-not screened and could be missed. The risk is one of omission only: every
-candidate still faces a de-confounded TWFE test, and the full-feature RF bounds
-the missed structure to be small.
+**Non-linearity scan.** The headline non-linearity screen (Part II) focuses on
+the M5 features, but the scan was also extended to **all 282 candidates**,
+crossed with held-out importance: it surfaces no new driver — the only
+significant hit re-discovers the documented drought channel through its duration
+facet. Purely non-linear effects below that scan's noise floor could still
+exist, but the full-feature RF's out-of-sample performance bounds any such
+signal to be small.
 
 **Two-lag SPI.** The slow flood signal (spi6 13–18m) and a longer-horizon
 drought signal (spi6 19–24m) are each individually significant (drought
